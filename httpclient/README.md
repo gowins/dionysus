@@ -49,7 +49,7 @@ if err != nil {
 	panic(err)
 }
 
-// rsp是标准的*http.Response对象
+// rsp是标准的*http.Response对象 
 body, _ := ioutil.ReadAll(res.Body)
 fmt.Println(string(body))
 ```
