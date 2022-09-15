@@ -9,6 +9,7 @@ const (
 	SpeedLimit     = -2
 	ServerInterval = 500
 	DefaultError   = 400
+	ParamError     = 100
 )
 
 var (
@@ -17,7 +18,12 @@ var (
 		ServerInterval: "服务器错误，请联系客服",
 		OK:             "请求成功",
 		DefaultError:   "请求失败",
+		ParamError:     "参数错误",
 	}
+)
+
+var (
+	GinErrorParams = NewGinError(ParamError, CodeMsgMap[ParamError])
 )
 
 type Response struct {
