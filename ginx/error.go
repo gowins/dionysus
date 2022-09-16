@@ -1,4 +1,4 @@
-package ginhelper
+package ginx
 
 type GinError struct {
 	Code int

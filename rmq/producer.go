@@ -4,7 +4,6 @@ import (
 	"github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
-	"github.com/apache/rocketmq-client-go/v2/rlog"
 )
 
 type ProducerConfig struct {
@@ -16,7 +15,6 @@ type ProducerConfig struct {
 }
 
 func NewProducer(c *ProducerConfig) (rocketmq.Producer, error) {
-	rlog.SetLogLevel("info")
 	var opts []producer.Option
 	opts = append(opts, producer.WithNameServer(c.NameSrvAddr))
 	if c.UseCredentials {

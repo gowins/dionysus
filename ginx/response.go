@@ -1,4 +1,4 @@
-package ginhelper
+package ginx
 
 import (
 	"github.com/gin-gonic/gin/render"

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/gowins/dionysus/ginhelper"
+	"github.com/gowins/dionysus/ginx"
 	"net/http"
 	"time"
 
@@ -11,10 +11,10 @@ import (
 )
 
 func main() {
-	r := ginhelper.NewZeroGinRouter()
+	r := ginx.NewZeroGinRouter()
 	r.Use(gin.Logger())
 	r.Handle(http.MethodGet, "test", func(c *gin.Context) render.Render {
-		return ginhelper.Success(time.Now().Unix())
+		return ginx.Success(time.Now().Unix())
 	})
 	ag := r.Group("admin/v1")
 	ag.Handle(http.MethodPost, "get", func(c *gin.Context) render.Render {
@@ -23,10 +23,10 @@ func main() {
 			Name string `json:"name"`
 		}{}
 		if err := c.ShouldBind(&tt); err != nil {
-			return ginhelper.Error(err)
+			return ginx.Error(err)
 		}
 		fmt.Printf("%v\n", tt)
-		return ginhelper.Success(time.Now().Unix())
+		return ginx.Success(time.Now().Unix())
 	})
 
 	ag.Handle(http.MethodPost, "panic", func(c *gin.Context) render.Render {
@@ -34,7 +34,7 @@ func main() {
 	})
 
 	ag.Handle(http.MethodPost, "error", func(c *gin.Context) render.Render {
-		return ginhelper.Error(ginhelper.NewGinError(350001, "请重新登陆"))
+		return ginx.Error(ginx.NewGinError(350001, "请重新登陆"))
 	})
 
 	defer r.Shutdown()
