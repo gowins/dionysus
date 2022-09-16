@@ -2,22 +2,21 @@ package main
 
 import (
 	"fmt"
-	"github.com/gowins/dionysus/ginx"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/render"
+	"github.com/gowins/dionysus/ginx"
 )
 
 func main() {
 	r := ginx.NewZeroGinRouter()
 	r.Use(gin.Logger())
-	r.Handle(http.MethodGet, "test", func(c *gin.Context) render.Render {
+	r.Handle(http.MethodGet, "test", func(c *gin.Context) ginx.Render {
 		return ginx.Success(time.Now().Unix())
 	})
 	ag := r.Group("admin/v1")
-	ag.Handle(http.MethodPost, "get", func(c *gin.Context) render.Render {
+	ag.Handle(http.MethodPost, "get", func(c *gin.Context) ginx.Render {
 		var tt = struct {
 			ID   int    `json:"id"`
 			Name string `json:"name"`
@@ -29,11 +28,11 @@ func main() {
 		return ginx.Success(time.Now().Unix())
 	})
 
-	ag.Handle(http.MethodPost, "panic", func(c *gin.Context) render.Render {
+	ag.Handle(http.MethodPost, "panic", func(c *gin.Context) ginx.Render {
 		panic("hehe")
 	})
 
-	ag.Handle(http.MethodPost, "error", func(c *gin.Context) render.Render {
+	ag.Handle(http.MethodPost, "error", func(c *gin.Context) ginx.Render {
 		return ginx.Error(ginx.NewGinError(350001, "请重新登陆"))
 	})
 

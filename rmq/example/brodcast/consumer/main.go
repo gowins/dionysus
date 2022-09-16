@@ -1,9 +1,9 @@
 package main
 
 import (
-	"base-frame/rmq"
 	"context"
 	"fmt"
+	"github.com/gowins/dionysus/rmq"
 
 	"github.com/apache/rocketmq-client-go/v2/consumer"
 	"github.com/apache/rocketmq-client-go/v2/primitive"

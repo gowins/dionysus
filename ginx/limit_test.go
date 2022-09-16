@@ -6,8 +6,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/gin-gonic/gin/render"
-
 	"github.com/gin-gonic/gin"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -19,7 +17,7 @@ func TestLimiterMiddleware(t *testing.T) {
 
 		r := NewZeroGinRouter()
 		r.Use(LimiterMiddleware(limit))
-		r.Handle(http.MethodGet, "/limiter", func(c *gin.Context) render.Render {
+		r.Handle(http.MethodGet, "/limiter", func(c *gin.Context) Render {
 			return Success(struct{}{})
 		})
 

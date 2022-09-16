@@ -7,8 +7,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin/render"
-
 	"github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
 	. "github.com/smartystreets/goconvey/convey"
@@ -26,7 +24,7 @@ var (
 func TestNewGinRouter(t *testing.T) {
 	Convey("new router", t, func() {
 		r := NewZeroGinRouter()
-		r.Handle("GET", "/test-router", func(ctx *gin.Context) render.Render {
+		r.Handle("GET", "/test-router", func(ctx *gin.Context) Render {
 			return Success(struct{}{})
 		})
 
@@ -45,7 +43,7 @@ func TestNewGinRouter2(t *testing.T) {
 	Convey("集成go-zero", t, func() {
 		r := NewZeroGinRouter()
 
-		r.Handle("GET", "/test-router", func(ctx *gin.Context) render.Render {
+		r.Handle("GET", "/test-router", func(ctx *gin.Context) Render {
 			return Success(struct{}{})
 		})
 		go func() {
@@ -64,19 +62,19 @@ func TestAddRouter(t *testing.T) {
 		r := NewZeroGinRouter()
 		ag := r.Group("/admin/v1")
 		ug := ag.Group("user")
-		ug.Handle(http.MethodGet, "add", func(ctx *gin.Context) render.Render {
+		ug.Handle(http.MethodGet, "add", func(ctx *gin.Context) Render {
 			return Success(struct{}{})
 		})
-		ug.Handle(http.MethodGet, "delete", func(ctx *gin.Context) render.Render {
+		ug.Handle(http.MethodGet, "delete", func(ctx *gin.Context) Render {
 			return Success(struct{}{})
 		})
-		ug.Handle(http.MethodGet, "update", func(ctx *gin.Context) render.Render {
+		ug.Handle(http.MethodGet, "update", func(ctx *gin.Context) Render {
 			return Success(struct{}{})
 		})
-		ug.Handle(http.MethodGet, "list", func(ctx *gin.Context) render.Render {
+		ug.Handle(http.MethodGet, "list", func(ctx *gin.Context) Render {
 			return Success(struct{}{})
 		})
-		ug.Handle(http.MethodGet, "detail", func(ctx *gin.Context) render.Render {
+		ug.Handle(http.MethodGet, "detail", func(ctx *gin.Context) Render {
 			return Success(struct{}{})
 		})
 

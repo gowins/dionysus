@@ -4,10 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/render"
 )
 
-type GinHandler func(c *gin.Context) render.Render
+type GinHandler func(c *gin.Context) Render
 
 type GinRouters interface {
 	Use(handler ...gin.HandlerFunc) GinRouters

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"base-frame/rmq"
 	"context"
 	"fmt"
+	"github.com/gowins/dionysus/rmq"
 	"log"
 	"time"
 

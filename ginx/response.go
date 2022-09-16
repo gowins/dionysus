@@ -32,7 +32,7 @@ type Response struct {
 	Data interface{} `json:"data"`
 }
 
-func ResponseData(code int, msg string, data interface{}) render.Render {
+func ResponseData(code int, msg string, data interface{}) Render {
 	return render.JSON{Data: Response{
 		Code: code,
 		Msg:  msg,
@@ -40,11 +40,11 @@ func ResponseData(code int, msg string, data interface{}) render.Render {
 	}}
 }
 
-func Success(data interface{}) render.Render {
+func Success(data interface{}) Render {
 	return ResponseData(OK, CodeMsgMap[OK], data)
 }
 
-func Error(err error) render.Render {
+func Error(err error) Render {
 	if ge, ok := err.(GinError); ok {
 		return ResponseData(ge.Code, ge.Error(), struct{}{})
 	}
