@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	base "github.com/gowins/dionysus"
+	"github.com/gowins/dionysus"
 	"github.com/gowins/dionysus/cmd"
 	"github.com/gowins/dionysus/ginx"
 )
@@ -12,7 +12,7 @@ import (
 func main() {
 	ginCmd := cmd.NewGinCommand()
 	addRoute(ginCmd)
-	base.Start("msg-srv", ginCmd)
+	dionysus.Start("msg-srv", ginCmd)
 }
 
 func addRoute(engine ginx.ZeroGinRouter) {

@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"os"
 	"sync"
 
 	"github.com/gowins/dionysus/ginx"
+	"github.com/gowins/dionysus/shutdown"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -22,12 +24,14 @@ var (
 
 type ginCommand struct {
 	ginx.ZeroGinRouter
+	cmd        *cobra.Command
+	server     *http.Server
+	addr       string
+	once       sync.Once
+	finishChan chan struct{}
 
-	cmd    *cobra.Command
-	server *http.Server
-	addr   string
-
-	once sync.Once
+	preRun  []func() error
+	postRun []func() error
 }
 
 func NewGinCommand() *ginCommand {
@@ -35,6 +39,7 @@ func NewGinCommand() *ginCommand {
 		ZeroGinRouter: ginx.NewZeroGinRouter(),
 		cmd:           &cobra.Command{Use: "gin", Short: "Run as go-zero server"},
 		server:        &http.Server{},
+		finishChan:    make(chan struct{}),
 	}
 }
 
@@ -44,21 +49,35 @@ func (t *ginCommand) GetCmd() *cobra.Command {
 			defaultWebServerAddr = envAddr
 		}
 		t.cmd.Flags().StringVarP(&t.addr, addrFlagName, "a", defaultWebServerAddr, "the http server address")
-
-		t.server.Handler = t.Handler()
 	})
+
+	t.cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		for _, v := range t.preRun {
+			if err := v(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 
 	t.cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		t.server.Addr = t.addr
-		return t.server.ListenAndServe()
+		t.server.Handler = t.Handler()
+		shutdown.NotifyAfterFinish(t.finishChan, t.startServer)
+		return nil
 	}
-	return t.cmd
-}
 
-func (t *ginCommand) Start() {
-	if err := t.cmd.Execute(); err != nil {
-		os.Exit(1)
+	t.cmd.PostRunE = func(cmd *cobra.Command, args []string) error {
+		shutdown.WaitingForNotifies(t.finishChan, t.stopServer)
+		for _, v := range t.postRun {
+			if err := v(); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
+
+	return t.cmd
 }
 
 func (t *ginCommand) RegFlagSet(set *pflag.FlagSet) {
@@ -70,21 +89,27 @@ func (t *ginCommand) Flags() *pflag.FlagSet {
 }
 
 func (t *ginCommand) RegPreRunFunc(value string, f func() error) error {
-	t.cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
-		return f()
-	}
+	t.preRun = append(t.preRun, f)
 	return nil
 }
 
 func (t *ginCommand) RegPostRunFunc(value string, f func() error) error {
-	t.cmd.PostRunE = func(cmd *cobra.Command, args []string) error {
-		if err := f(); err != nil {
-			return err
-		}
-		if err := t.server.Shutdown(context.TODO()); err != nil {
-			return err
-		}
-		return nil
-	}
+	t.postRun = append(t.postRun, f)
 	return nil
+}
+
+func (g *ginCommand) startServer() {
+	log.Printf("[Dio] Engine setting with address %v", g.server.Addr)
+	if err := g.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Printf("listen: %s\n", err)
+		os.Exit(1)
+	}
+}
+
+func (g *ginCommand) stopServer() {
+	log.Println("[info] Server exiting")
+	if err := g.server.Shutdown(context.TODO()); err != nil {
+		log.Println("[error] Server forced to shutdown:", err)
+		os.Exit(1)
+	}
 }

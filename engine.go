@@ -1,4 +1,4 @@
-package base_frame
+package dionysus
 
 import (
 	"errors"
