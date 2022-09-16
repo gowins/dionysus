@@ -48,10 +48,11 @@ func (t *ginCommand) GetCmd() *cobra.Command {
 		if envAddr := os.Getenv(WebServerAddr); envAddr != "" {
 			defaultWebServerAddr = envAddr
 		}
-		t.cmd.Flags().StringVarP(&t.addr, addrFlagName, "a", defaultWebServerAddr, "the http server address")
+		t.cmd.Flags().StringVarP(&t.server.Addr, addrFlagName, "a", defaultWebServerAddr, "the http server address")
 	})
 
 	t.cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		t.server.Handler = t.Handler()
 		for _, v := range t.preRun {
 			if err := v(); err != nil {
 				return err
@@ -61,8 +62,6 @@ func (t *ginCommand) GetCmd() *cobra.Command {
 	}
 
 	t.cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		t.server.Addr = t.addr
-		t.server.Handler = t.Handler()
 		shutdown.NotifyAfterFinish(t.finishChan, t.startServer)
 		return nil
 	}
