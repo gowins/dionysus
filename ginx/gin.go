@@ -1,42 +1,35 @@
 package ginx
 
 import (
-	"context"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 type ZeroGinRouter interface {
 	GinRouters
 	Group(path string, handler ...GinHandler) ZeroGinRouter
+	Handler() http.Handler
 }
 
-type GinRouter struct {
+type ginRouter struct {
 	ginGroup
 
 	engine *gin.Engine
-	server *http.Server
-	root   bool
 }
 
-func NewZeroGinRouter() *GinRouter {
+func NewZeroGinRouter() ZeroGinRouter {
 	g := gin.New()
 	g.Use(gin.Recovery()) // 默认注册recovery
-	r := &GinRouter{
+	r := &ginRouter{
 		ginGroup: ginGroup{g: &g.RouterGroup},
 		engine:   g,
-		server: &http.Server{
-			Handler: g.Handler(),
-		},
-		root: true,
 	}
 	return r
 }
 
-func (r *GinRouter) Group(path string, handler ...GinHandler) ZeroGinRouter {
+func (r *ginRouter) Group(path string, handler ...GinHandler) ZeroGinRouter {
 	g := r.engine.Group(path, buildGinHandler(handler...)...)
-	return &GinRouter{
+	return &ginRouter{
 		ginGroup: ginGroup{
 			g: g,
 		},
@@ -44,19 +37,6 @@ func (r *GinRouter) Group(path string, handler ...GinHandler) ZeroGinRouter {
 	}
 }
 
-// Run 启动
-func (r *GinRouter) Run(addr string) error {
-	r.server.Addr = addr
-	if err := r.server.ListenAndServe(); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Shutdown 停止
-func (r *GinRouter) Shutdown() error {
-	if err := r.server.Shutdown(context.Background()); err != nil {
-		return err
-	}
-	return nil
+func (r *ginRouter) Handler() http.Handler {
+	return r.engine.Handler()
 }

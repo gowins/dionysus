@@ -36,6 +36,5 @@ func main() {
 		return ginx.Error(ginx.NewGinError(350001, "请重新登陆"))
 	})
 
-	defer r.Shutdown()
-	r.Run(":9999")
+	_ = http.ListenAndServe(":9999", r.Handler())
 }
