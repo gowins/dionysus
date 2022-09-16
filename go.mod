@@ -12,6 +12,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/xid v1.4.0
 	github.com/smartystreets/goconvey v1.7.2
+	github.com/spf13/cobra v1.2.1
+	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.0
 	github.com/zeromicro/go-zero v1.4.0
 	go.uber.org/atomic v1.10.0
@@ -37,6 +39,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
