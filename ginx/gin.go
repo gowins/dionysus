@@ -13,8 +13,8 @@ type ZeroGinRouter interface {
 
 type ginRouter struct {
 	ginGroup
-
 	engine *gin.Engine
+	group  *gin.RouterGroup
 }
 
 func NewZeroGinRouter() ZeroGinRouter {
@@ -23,16 +23,18 @@ func NewZeroGinRouter() ZeroGinRouter {
 	r := &ginRouter{
 		ginGroup: ginGroup{g: &g.RouterGroup},
 		engine:   g,
+		group:    &g.RouterGroup,
 	}
 	return r
 }
 
 func (r *ginRouter) Group(path string, handler ...GinHandler) ZeroGinRouter {
-	g := r.engine.Group(path, buildGinHandler(handler...)...)
+	g := r.group.Group(path, buildGinHandler(handler...)...)
 	return &ginRouter{
 		ginGroup: ginGroup{
 			g: g,
 		},
+		group:  g,
 		engine: r.engine,
 	}
 }
