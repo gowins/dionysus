@@ -1,7 +1,9 @@
 package redis
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -17,7 +19,7 @@ type Rdconfig struct {
 }
 
 // new redis pool from config center by watch
-func NewClients(redisConfig *Rdconfig) (*redis.Client, error) {
+func NewClient(redisConfig *Rdconfig) (*redis.Client, error) {
 	if redisConfig.Addr == "" {
 		return nil, errors.New("redis address is required")
 	}
@@ -34,5 +36,11 @@ func NewClients(redisConfig *Rdconfig) (*redis.Client, error) {
 		IdleTimeout: time.Duration(redisConfig.IdleTimeout) * time.Second,
 		Password:    redisConfig.Password,
 	})
+
+	err := redisCli.Ping(context.Background()).Err()
+	if err != nil {
+		return nil, fmt.Errorf("connect redis client failed %w", err)
+	}
+
 	return redisCli, nil
 }
