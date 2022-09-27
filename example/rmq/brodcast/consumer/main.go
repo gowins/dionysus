@@ -11,7 +11,6 @@ import (
 )
 
 func main() {
-	rmq.SetLogger()
 	client, err := rmq.NewConsumer(&rmq.ConsumerConfig{
 		NameSrvAddr:    []string{"http://rmq-cn-zvp2ud6lc0e.cn-hangzhou.rmq.aliyuncs.com:8080"},
 		GroupName:      "hltv_g",

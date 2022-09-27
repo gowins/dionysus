@@ -38,7 +38,7 @@ func (r rlogger) OutputPath(path string) (err error) {
 
 func init() {
 	dl, _ := log.New(log.ZapLogger, []log.Option{ // 根据实际需求添加option
-		log.WithLevelEnabler(log.DebugLevel),
+		log.WithLevelEnabler(log.InfoLevel),
 		log.WithEncoderCfg(log.NewEncoderConfig()),
 		log.AddCallerSkip(3),
 		log.AddCaller(),
