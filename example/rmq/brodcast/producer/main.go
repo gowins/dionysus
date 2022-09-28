@@ -12,7 +12,6 @@ import (
 )
 
 func main() {
-	rmq.SetLogger()
 	client, err := rmq.NewProducer(&rmq.ProducerConfig{
 		NameSrvAddr:    []string{"http://rmq-cn-zvp2ud6lc0e.cn-hangzhou.rmq.aliyuncs.com:8080"},
 		UseCredentials: true,
