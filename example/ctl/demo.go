@@ -1,7 +1,6 @@
-package ctl
+package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -54,27 +53,31 @@ func main() {
 	}
 
 	// 3.注册绑定用户主要方法
-	run := func(ctx context.Context) {
+	run := func() error {
 		rf, err := subSet.GetString("runflag")
 		if err != nil {
 			log.Error("error:", err)
+			return err
 		}
 
 		// c.Flags() 包括了之前声明 subSet，和 subSet.GetInt("sleep") 效力相同
 		s, err := c.Flags().GetInt("sleep")
 		if err != nil {
 			log.Error("error:", err)
+			return err
 		}
 
 		userMainFunc(rf, s)
+		return nil
 	}
 	if err := c.RegRunFunc(run); err != nil {
 		panic(err)
 	}
 
 	// 4.1 [可选] 注册shutdown方法，只有程序收到 os.Signal 退出的时候会执行
-	shut := func(ctx context.Context) {
-		fmt.Println(blue, "===========  Shutdown flag:", ctx.Value(cmd.CtxKey("shutdownflag")), " =========== ", white)
+	shut := func() error {
+		fmt.Println(blue, "===========  Shutdown flag:", " =========== ", white)
+		return nil
 	}
 	if err := c.RegShutdownFunc(shut); err != nil {
 		panic(err)

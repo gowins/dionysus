@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -45,22 +44,25 @@ type CtxKey string
 type ctl struct {
 	cmd *cobra.Command
 
-	runFunc, shutdownFunc func(ctx context.Context)
+	runFunc, shutdownFunc func() error
+	preFunc, postFunc     []func() error
 }
 
 func NewCtlCommand() *ctl {
 	return &ctl{
-		cmd:          &cobra.Command{Use: "ctl", Short: "Run as ctl mod"},
-		runFunc:      func(ctx context.Context) {},
-		shutdownFunc: func(ctx context.Context) {},
+		cmd: &cobra.Command{Use: "ctl", Short: "Run as ctl mod"},
 	}
 }
 
 func (c *ctl) RegPreRunFunc(value string, f func() error) error {
+	if f == nil {
+		return errors.New("Registering nil func ")
+	}
+	c.preFunc = append(c.preFunc, f)
 	return nil
 }
 
-func (c *ctl) RegRunFunc(f func(ctx context.Context)) error {
+func (c *ctl) RegRunFunc(f func() error) error {
 	if f == nil {
 		return errors.New("Registering nil func ")
 	}
@@ -68,7 +70,7 @@ func (c *ctl) RegRunFunc(f func(ctx context.Context)) error {
 	return nil
 }
 
-func (c *ctl) RegShutdownFunc(f func(ctx context.Context)) error {
+func (c *ctl) RegShutdownFunc(f func() error) error {
 	if f == nil {
 		return errors.New("Registering nil func ")
 	}
@@ -77,6 +79,10 @@ func (c *ctl) RegShutdownFunc(f func(ctx context.Context)) error {
 }
 
 func (c *ctl) RegPostRunFunc(value string, f func() error) error {
+	if f == nil {
+		return errors.New("Registering nil func ")
+	}
+	c.postFunc = append(c.postFunc, f)
 	return nil
 }
 
@@ -89,7 +95,6 @@ func (c *ctl) Flags() *pflag.FlagSet {
 }
 
 func (c *ctl) GetCmd() *cobra.Command {
-	valCtx := context.TODO()
 	finishChan := make(chan struct{})
 
 	c.cmd.PreRunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -99,24 +104,34 @@ func (c *ctl) GetCmd() *cobra.Command {
 			}
 		}()
 
-		// 1. put flags into ctx
-		cmd.Flags().VisitAll(func(f *pflag.Flag) {
-			valCtx = context.WithValue(valCtx, CtxKey(f.Name), f.Value.String())
-		})
+		if len(c.preFunc) > 0 {
+			for _, f := range c.preFunc {
+				if err = f(); err != nil {
+					return err
+				}
+			}
+		}
 
 		return nil
 	}
 
 	c.cmd.Run = func(cmd *cobra.Command, args []string) {
 		shutdown.NotifyAfterFinish(finishChan, func() {
-			c.runFunc(valCtx)
+			_ = c.runFunc()
 		})
 
 	}
 
 	c.cmd.PostRunE = func(cmd *cobra.Command, args []string) error {
+		if len(c.postFunc) > 0 {
+			for _, f := range c.postFunc {
+				if err := f(); err != nil {
+					return err
+				}
+			}
+		}
 		shutdown.WaitingForNotifies(finishChan, func() {
-			c.shutdownFunc(valCtx)
+			_ = c.shutdownFunc()
 		})
 		return nil
 	}
