@@ -123,6 +123,10 @@ func (c *ctl) GetCmd() *cobra.Command {
 	}
 
 	c.cmd.PostRunE = func(cmd *cobra.Command, args []string) error {
+		shutdown.WaitingForNotifies(finishChan, func() {
+			_ = c.shutdownFunc()
+		})
+
 		if len(c.postFunc) > 0 {
 			for _, f := range c.postFunc {
 				if err := f(); err != nil {
@@ -130,9 +134,6 @@ func (c *ctl) GetCmd() *cobra.Command {
 				}
 			}
 		}
-		shutdown.WaitingForNotifies(finishChan, func() {
-			_ = c.shutdownFunc()
-		})
 		return nil
 	}
 
