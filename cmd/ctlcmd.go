@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -44,7 +45,7 @@ type CtxKey string
 type ctl struct {
 	cmd *cobra.Command
 
-	runFunc, shutdownFunc func() error
+	runFunc, shutdownFunc func(ctx context.Context)
 	preFunc, postFunc     []func() error
 }
 
@@ -62,7 +63,7 @@ func (c *ctl) RegPreRunFunc(value string, f func() error) error {
 	return nil
 }
 
-func (c *ctl) RegRunFunc(f func() error) error {
+func (c *ctl) RegRunFunc(f func(ctx context.Context)) error {
 	if f == nil {
 		return errors.New("Registering nil func ")
 	}
@@ -70,7 +71,7 @@ func (c *ctl) RegRunFunc(f func() error) error {
 	return nil
 }
 
-func (c *ctl) RegShutdownFunc(f func() error) error {
+func (c *ctl) RegShutdownFunc(f func(ctx context.Context)) error {
 	if f == nil {
 		return errors.New("Registering nil func ")
 	}
@@ -95,6 +96,7 @@ func (c *ctl) Flags() *pflag.FlagSet {
 }
 
 func (c *ctl) GetCmd() *cobra.Command {
+	valCtx := context.TODO()
 	finishChan := make(chan struct{})
 
 	c.cmd.PreRunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -103,6 +105,10 @@ func (c *ctl) GetCmd() *cobra.Command {
 				err = fmt.Errorf("Recovered from prerun. Err:%v ", r)
 			}
 		}()
+
+		cmd.Flags().VisitAll(func(f *pflag.Flag) {
+			valCtx = context.WithValue(valCtx, CtxKey(f.Name), f.Value.String())
+		})
 
 		if len(c.preFunc) > 0 {
 			for _, f := range c.preFunc {
@@ -117,14 +123,14 @@ func (c *ctl) GetCmd() *cobra.Command {
 
 	c.cmd.Run = func(cmd *cobra.Command, args []string) {
 		shutdown.NotifyAfterFinish(finishChan, func() {
-			_ = c.runFunc()
+			c.runFunc(valCtx)
 		})
 
 	}
 
 	c.cmd.PostRunE = func(cmd *cobra.Command, args []string) error {
 		shutdown.WaitingForNotifies(finishChan, func() {
-			_ = c.shutdownFunc()
+			c.shutdownFunc(valCtx)
 		})
 
 		if len(c.postFunc) > 0 {
