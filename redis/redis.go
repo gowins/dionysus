@@ -18,7 +18,7 @@ type Rdconfig struct {
 	IdleTimeout int    `json:"idle_timeout"`
 }
 
-// new redis pool from config center by watch
+// NewClient new redis pool from config center by watch
 func NewClient(redisConfig *Rdconfig) (*redis.Client, error) {
 	if redisConfig.Addr == "" {
 		return nil, errors.New("redis address is required")
