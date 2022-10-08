@@ -3,14 +3,13 @@ package ginx
 import (
 	"bytes"
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-
 	"github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/zeromicro/go-zero/rest"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 var (
@@ -81,6 +80,7 @@ func TestAddRouter(t *testing.T) {
 func testHttpRequest(method, path string, body interface{}, r ZeroGinRouter) *httptest.ResponseRecorder {
 	bs, _ := json.Marshal(body)
 	req, _ := http.NewRequest(method, path, bytes.NewReader(bs))
+	req.Header.Set("Request_Timeout", "1")
 	writer := httptest.NewRecorder()
 	r.(*ginRouter).engine.ServeHTTP(writer, req)
 	return writer
