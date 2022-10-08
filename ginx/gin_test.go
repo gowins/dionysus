@@ -46,14 +46,9 @@ func TestNewGinRouter2(t *testing.T) {
 		r.Handle("GET", "/test-router", func(ctx *gin.Context) Render {
 			return Success(struct{}{})
 		})
-		go func() {
-			_ = r.Run(":9999")
-		}()
 
 		res := testHttpRequest("GET", "/test-router", nil, r)
 		So(res.Code, ShouldEqual, 200)
-
-		_ = r.Shutdown()
 	})
 }
 
@@ -83,10 +78,10 @@ func TestAddRouter(t *testing.T) {
 	})
 }
 
-func testHttpRequest(method, path string, body interface{}, r *GinRouter) *httptest.ResponseRecorder {
+func testHttpRequest(method, path string, body interface{}, r ZeroGinRouter) *httptest.ResponseRecorder {
 	bs, _ := json.Marshal(body)
 	req, _ := http.NewRequest(method, path, bytes.NewReader(bs))
 	writer := httptest.NewRecorder()
-	r.engine.ServeHTTP(writer, req)
+	r.(*ginRouter).engine.ServeHTTP(writer, req)
 	return writer
 }
