@@ -32,7 +32,7 @@ func TestNewLogger(t *testing.T) {
 	l.Error("Hello World!")
 
 	_, err = New(7777)
-	assert.EqualError(t, err, "Invaild LoggerType:7777 ")
+	assert.EqualError(t, err, "invaild LoggerType:7777 ")
 }
 
 func TestErrWriter(t *testing.T) {
