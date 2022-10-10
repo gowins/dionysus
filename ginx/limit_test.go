@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -22,7 +23,7 @@ func TestLimiterMiddleware(t *testing.T) {
 		})
 
 		wg := sync.WaitGroup{}
-		success := 0
+		var success int32
 		for i := 0; i < limit*2; i++ {
 			wg.Add(1)
 			go func(i int) {
@@ -31,7 +32,7 @@ func TestLimiterMiddleware(t *testing.T) {
 				_ = json.Unmarshal(w.Body.Bytes(), res)
 				t.Logf("goroutine:%d response:%d", i, res.Code)
 				if res.Code == 200 {
-					success++
+					atomic.AddInt32(&success, 1)
 				}
 				wg.Done()
 			}(i)
