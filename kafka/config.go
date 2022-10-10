@@ -44,3 +44,15 @@ func ReaderWithAsync() ReaderOption {
 		config.CommitInterval = defaultCommitInterval
 	}
 }
+
+func ReaderWithDialer(dialer *kafka.Dialer) ReaderOption {
+	return func(config *kafka.ReaderConfig) {
+		config.Dialer = dialer
+	}
+}
+
+func ReaderWithOffset(offset int64) ReaderOption {
+	return func(config *kafka.ReaderConfig) {
+		config.StartOffset = offset
+	}
+}
