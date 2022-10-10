@@ -68,7 +68,7 @@ type Writer interface {
 
 	WithLevelEnabler(DebugLevel)                 // 可选，设置日志输出级别，默认DebugLevel
 	WithWriter(os.Stdout)                        // 可选，设置日志的wirter
-	Fields(map[string]interface{}{"wpt": "yes"}) // 可选，增加字段到日志输出
+	Fields(map[string]interface{}{"wong": "yes"}) // 可选，增加字段到日志输出
 	ErrorOutput(os.Stderr)                       // 可选，ErrorLevel及之后的日志级别将往这里输出
 ```
 
