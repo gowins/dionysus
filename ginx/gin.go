@@ -8,7 +8,7 @@ import (
 
 type ZeroGinRouter interface {
 	GinRouters
-	Group(path string, handler ...GinHandler) ZeroGinRouter
+	Group(path string, handlers ...gin.HandlerFunc) ZeroGinRouter
 	Handler() http.Handler
 }
 
@@ -18,8 +18,12 @@ type ginRouter struct {
 	group  *gin.RouterGroup
 }
 
-func NewZeroGinRouter() ZeroGinRouter {
+func NewZeroGinRouter(opts ...GinOption) ZeroGinRouter {
 	g := gin.New()
+	// set properties of gin.Engine
+	for _, opt := range opts {
+		opt(g)
+	}
 	g.Use(gin.Recovery()) // 默认注册recovery
 	r := &ginRouter{
 		ginGroup: ginGroup{g: &g.RouterGroup},
@@ -29,8 +33,8 @@ func NewZeroGinRouter() ZeroGinRouter {
 	return r
 }
 
-func (r *ginRouter) Group(path string, handler ...GinHandler) ZeroGinRouter {
-	g := r.group.Group(path, buildGinHandler(handler...)...)
+func (r *ginRouter) Group(path string, handlers ...gin.HandlerFunc) ZeroGinRouter {
+	g := r.group.Group(path, handlers...)
 	return &ginRouter{
 		ginGroup: ginGroup{
 			g: g,
