@@ -6,9 +6,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ZeroGinRouter route manage
 type ZeroGinRouter interface {
 	GinRouters
-	Group(path string, handler ...GinHandler) ZeroGinRouter
+	// Group create and return new router group
+	Group(path string, handlers ...GinHandler) ZeroGinRouter
+	// Handler return http.Handler
 	Handler() http.Handler
 }
 
@@ -18,8 +21,12 @@ type ginRouter struct {
 	group  *gin.RouterGroup
 }
 
-func NewZeroGinRouter() ZeroGinRouter {
+func NewZeroGinRouter(opts ...GinOption) ZeroGinRouter {
 	g := gin.New()
+	// set properties of gin.Engine
+	for _, opt := range opts {
+		opt(g)
+	}
 	g.Use(gin.Recovery()) // 默认注册recovery
 	r := &ginRouter{
 		ginGroup: ginGroup{g: &g.RouterGroup},
@@ -29,8 +36,9 @@ func NewZeroGinRouter() ZeroGinRouter {
 	return r
 }
 
-func (r *ginRouter) Group(path string, handler ...GinHandler) ZeroGinRouter {
-	g := r.group.Group(path, buildGinHandler(handler...)...)
+// Group create and return new router group
+func (r *ginRouter) Group(path string, handlers ...GinHandler) ZeroGinRouter {
+	g := r.group.Group(path, buildGinHandler(handlers...)...)
 	return &ginRouter{
 		ginGroup: ginGroup{
 			g: g,
@@ -40,6 +48,7 @@ func (r *ginRouter) Group(path string, handler ...GinHandler) ZeroGinRouter {
 	}
 }
 
+// Handler return http.Handler
 func (r *ginRouter) Handler() http.Handler {
 	return r.engine.Handler()
 }

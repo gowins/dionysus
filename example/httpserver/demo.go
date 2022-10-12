@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -17,11 +18,23 @@ func main() {
 
 func addRoute(engine ginx.ZeroGinRouter) {
 	engine.Use(gin.Logger())
-	adminGroup := engine.Group("admin/v1")
+	engine.Use(func(_ *gin.Context) {
+		fmt.Println("root RouteGroup")
+	})
+	adminGroup := engine.Group("admin/v1", func(_ *gin.Context) ginx.Render {
+		fmt.Println("this is admin group")
+		return nil
+	})
 	adminGroup.Handle(http.MethodGet, "user/get", userGet)
 	adminGroup.Handle(http.MethodPost, "user/post", userPost)
+	adminGroup.HandleE(http.MethodGet, "user/list", func(c *gin.Context) error {
+		return ginx.NewGinError(-1, "testing error")
+	})
 
-	webGroup := engine.Group("web/v1")
+	webGroup := engine.Group("web/v1", func(_ *gin.Context) ginx.Render {
+		fmt.Println("this is web group")
+		return nil
+	})
 	webGroup.Handle(http.MethodGet, "user/get", userGet)
 	webGroup.Handle(http.MethodPost, "user/post", userPost)
 }
