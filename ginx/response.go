@@ -5,20 +5,20 @@ import (
 )
 
 const (
-	OK             = 200
-	SpeedLimit     = -2
-	ServerInterval = 500
-	DefaultError   = 400
+	OK             = 0
 	ParamError     = 100
+	DefaultError   = 400
+	SpeedLimit     = 429
+	ServerInterval = 500
 )
 
 var (
 	CodeMsgMap = map[int]string{
-		SpeedLimit:     "服务器正忙，请稍后再试",
-		ServerInterval: "服务器错误，请联系客服",
 		OK:             "请求成功",
-		DefaultError:   "请求失败",
 		ParamError:     "参数错误",
+		DefaultError:   "请求失败",
+		SpeedLimit:     "服务器正忙，请稍后再试",
+		ServerInterval: "服务器错误",
 	}
 )
 
