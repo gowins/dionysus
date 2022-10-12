@@ -1,6 +1,7 @@
 package ginx
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,7 +12,7 @@ func LimiterMiddleware(limit int) gin.HandlerFunc {
 	limiter := rate.NewLimiter(rate.Every(time.Second), limit)
 	return func(c *gin.Context) {
 		if !limiter.Allow() {
-			c.JSON(200, Response{
+			c.JSON(http.StatusTooManyRequests, Response{
 				Code: SpeedLimit,
 				Msg:  CodeMsgMap[SpeedLimit],
 			})
