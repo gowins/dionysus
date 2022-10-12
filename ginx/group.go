@@ -6,13 +6,28 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// GinHandler gin.HandleFunc with Render interface
 type GinHandler func(c *gin.Context) Render
 
+// Handler gin.HandleFunc with error
+// convert it to gin.HandleFunc
+//
+//	func example(h Handler) gin.HandleFunc {
+//			return func(c *gin.Context) {
+//				if err := h(c); err != nil {
+//					// do something
+//				}
+//			}
+//	}
 type Handler func(c *gin.Context) error
 
+// GinRouters register route
 type GinRouters interface {
+	// Use resgister middleware
 	Use(handler ...gin.HandlerFunc) GinRouters
+	// Handle use GinHandler to register route
 	Handle(method, path string, handler ...GinHandler) GinRouters
+	// HandleE use Handler to register route
 	HandleE(method, path string, handler ...Handler) GinRouters
 }
 
