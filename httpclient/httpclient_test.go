@@ -13,7 +13,7 @@ import (
 	"github.com/smartystreets/goconvey/convey"
 )
 
-const URL = "http://www.baidu.com"
+const URL = "https://github.com/"
 
 func TestMain(m *testing.M) {
 	os.Exit(m.Run())
