@@ -18,7 +18,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestNew(t *testing.T) {
-	const URL = "http://www.baidu.com"
+	const URL = "https://github.com"
 
 	convey.Convey("Test HTTP Client With Hystrix", t, func() {
 		convey.Convey("Case: Normal", func() {
