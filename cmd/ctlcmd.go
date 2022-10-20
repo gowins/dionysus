@@ -145,3 +145,7 @@ func (c *ctl) GetCmd() *cobra.Command {
 
 	return c.cmd
 }
+
+func (c *ctl) GetShutdownFunc() func() {
+	return func() {}
+}
