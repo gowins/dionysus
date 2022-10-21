@@ -12,8 +12,8 @@
 name: "CodeQL"
 
 on:
-#  push:
-#    branches: [ master ]
+  push:
+    branches: [ master ]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ master ]
@@ -23,7 +23,7 @@ on:
 jobs:
   analyze:
     name: Analyze
-    runs-on: alpine-latest
+    runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
