@@ -1,8 +1,18 @@
 package main
 
-import "github.com/gowins/dionysus/log"
+import (
+	"github.com/gowins/dionysus/log"
+	"github.com/gowins/dionysus/log/writer/rotate"
+)
 
 func main() {
-	log.Setup(log.SetProjectName("Test"))
+	// rotate example
+	cfg := rotate.NewWriterConfig()
+	cfg.Dir = "."
+	w, err := rotate.NewRotateLogger(cfg)
+	if err != nil {
+		panic(err)
+	}
+	log.Setup(log.SetProjectName("Test"), log.WithWriter(w))
 	log.Debug("haha")
 }
