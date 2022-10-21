@@ -4,9 +4,10 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"time"
 
 	"github.com/gowins/dionysus"
 )
@@ -35,6 +36,7 @@ func (tc *testCmd) Flags() *pflag.FlagSet {
 }
 
 func main() {
+	//register cmd
 	tc := &testCmd{
 		cmd:      &cobra.Command{Use: "testCmd", Short: "just for test"},
 		stopChan: make(chan struct{}),
@@ -51,23 +53,19 @@ func main() {
 			}
 		}
 	}
+
+	//dio init
 	d := dionysus.NewDio()
+	//todo  对齐sysPriority 10个定义、后续append
+	_ = d.PreRunRegWithPriority("userPre1", 102, func() error {
+		fmt.Printf("this is userPre1\n")
+		return nil
+	})
 	_ = d.PreRunRegWithPriority("userPre2", 102, func() error {
 		fmt.Printf("this is userPre2\n")
 		return nil
 	})
-	_ = d.PreRunRegWithPriority("userPre1", 101, func() error {
-		fmt.Printf("this is userPre1\n")
-		return nil
-	})
-	_ = d.PostRunRegWithPriority("userPost2", 102, func() error {
-		fmt.Printf("this is userPost2\n")
-		return nil
-	})
-	_ = d.PostRunRegWithPriority("userPost1", 101, func() error {
-		fmt.Printf("this is userPost1\n")
-		return nil
-	})
+
 	_ = d.PreRunStepsAppend("userPreA1", func() error {
 		fmt.Printf("this is userPreA1\n")
 		return nil
@@ -76,14 +74,7 @@ func main() {
 		fmt.Printf("this is userPreA2\n")
 		return nil
 	})
-	_ = d.PostRunStepsAppend("userPostA1", func() error {
-		fmt.Printf("this is userPostA1\n")
-		return nil
-	})
-	_ = d.PostRunStepsAppend("userPostA2", func() error {
-		fmt.Printf("this is userPostA2\n")
-		return nil
-	})
+
 	if err := d.DioStart("testcmd", tc); err != nil {
 		fmt.Printf("DioStart err is %v\n", err)
 	}

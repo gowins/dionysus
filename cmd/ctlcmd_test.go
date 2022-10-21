@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"context"
-	"github.com/spf13/pflag"
 	"testing"
 	"time"
+
+	"github.com/spf13/pflag"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -13,12 +14,18 @@ func TestRegShutdown(t *testing.T) {
 	c := NewCtlCommand()
 	c.GetShutdownFunc()
 	c.GetCmd()
-	c.RegPreRunFunc("test", func() error {
+	err := c.RegPreRunFunc("test", func() error {
 		return nil
 	})
-	c.RegPostRunFunc("test2", func() error {
+	if err != nil {
+		return
+	}
+	err = c.RegPostRunFunc("test2", func() error {
 		return nil
 	})
+	if err != nil {
+		return
+	}
 	c.RegFlagSet(&pflag.FlagSet{})
 	c.Flags()
 	Convey("", t, func() {

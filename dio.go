@@ -18,8 +18,6 @@ type Dio struct {
 	persistentPostRunE *step.Steps
 }
 
-var defaultDio = NewDio()
-
 func NewDio() *Dio {
 	d := &Dio{
 		cmd:                &cobra.Command{Use: "root", Short: "just for root"},
@@ -76,11 +74,7 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 			logger.Printf("cmd can not be nil")
 			return fmt.Errorf("cmd can not be nil")
 		}
-		if originCmd.RunE != nil {
-			originCmd.RunE = WrapCobraCmdRunE(originCmd.RunE, c.GetShutdownFunc())
-		} else if originCmd.Run != nil {
-			originCmd.Run = WrapCobraCmdRun(originCmd.Run, c.GetShutdownFunc())
-		}
+		originCmd.RunE = wrapCobrCmdRun(originCmd.RunE, c.GetShutdownFunc())
 		d.cmd.AddCommand(originCmd)
 	}
 
@@ -114,15 +108,18 @@ func (d *Dio) PostRunRegWithPriority(value string, priority int, fn func() error
 }
 
 // Deprecated:: Use DioStart
+var defaultDio = NewDio()
+
+// Deprecated:: Use DioStart
 func Start(project string, cmds ...cmd.Commander) {
 	if err := defaultDio.DioStart(project, cmds...); err != nil {
 		panic(err)
 	}
 }
 
-type CobraRunE func(cmd *cobra.Command, args []string) error
+type CobraRun func(cmd *cobra.Command, args []string) error
 
-func WrapCobraCmdRunE(cobraRunE CobraRunE, shutdownFunc func()) CobraRunE {
+func wrapCobrCmdRun(cR CobraRun, shutdownFunc func()) CobraRun {
 	finishChan := make(chan struct{})
 	return func(cmd *cobra.Command, args []string) error {
 		go func() {
@@ -132,7 +129,7 @@ func WrapCobraCmdRunE(cobraRunE CobraRunE, shutdownFunc func()) CobraRunE {
 				}
 				finishChan <- struct{}{}
 			}()
-			err := cobraRunE(cmd, args)
+			err := cR(cmd, args)
 			if err != nil {
 				logger.Printf("cobra cmd rune error %v\n", err)
 			}
@@ -143,25 +140,7 @@ func WrapCobraCmdRunE(cobraRunE CobraRunE, shutdownFunc func()) CobraRunE {
 	}
 }
 
-type CobraRun func(cmd *cobra.Command, args []string)
-
-func WrapCobraCmdRun(cobraRun CobraRun, shutdownFunc func()) CobraRun {
-	finishChan := make(chan struct{})
-	return func(cmd *cobra.Command, args []string) {
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					logger.Printf("[error] Panic occurred in start process: %#v\n", r)
-				}
-				finishChan <- struct{}{}
-			}()
-			cobraRun(cmd, args)
-		}()
-		// TODO health check start
-		WaitingForNotifies(finishChan, shutdownFunc)
-	}
-}
-
+// WaitingForNotifies todo shutdown 重复
 func WaitingForNotifies(finishChan <-chan struct{}, shutdownFunc func()) {
 	quit := make(chan os.Signal)
 	signal.Ignore(syscall.SIGHUP)
