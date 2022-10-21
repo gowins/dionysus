@@ -77,9 +77,9 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 			return fmt.Errorf("cmd can not be nil")
 		}
 		if originCmd.RunE != nil {
-			originCmd.RunE = WrapCobrCmdRunE(originCmd.RunE, c.GetShutdownFunc())
+			originCmd.RunE = WrapCobraCmdRunE(originCmd.RunE, c.GetShutdownFunc())
 		} else if originCmd.Run != nil {
-			originCmd.Run = WrapCobrCmdRun(originCmd.Run, c.GetShutdownFunc())
+			originCmd.Run = WrapCobraCmdRun(originCmd.Run, c.GetShutdownFunc())
 		}
 		d.cmd.AddCommand(originCmd)
 	}
@@ -122,7 +122,7 @@ func Start(project string, cmds ...cmd.Commander) {
 
 type CobraRunE func(cmd *cobra.Command, args []string) error
 
-func WrapCobrCmdRunE(cobraRunE CobraRunE, shutdownFunc func()) CobraRunE {
+func WrapCobraCmdRunE(cobraRunE CobraRunE, shutdownFunc func()) CobraRunE {
 	finishChan := make(chan struct{})
 	return func(cmd *cobra.Command, args []string) error {
 		go func() {
@@ -145,7 +145,7 @@ func WrapCobrCmdRunE(cobraRunE CobraRunE, shutdownFunc func()) CobraRunE {
 
 type CobraRun func(cmd *cobra.Command, args []string)
 
-func WrapCobrCmdRun(cobraRun CobraRun, shutdownFunc func()) CobraRun {
+func WrapCobraCmdRun(cobraRun CobraRun, shutdownFunc func()) CobraRun {
 	finishChan := make(chan struct{})
 	return func(cmd *cobra.Command, args []string) {
 		go func() {

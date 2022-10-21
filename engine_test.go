@@ -54,22 +54,22 @@ func TestDio_DioStart(t *testing.T) {
 	wantPreStrings := []string{"this is userPre1\n", "this is userPre2\n", "this is userPreA1\n", "this is userPreA2\n"}
 	gotPostStrings := []string{}
 	wantpostStrings := []string{"this is userPost1\n", "this is userPost2\n", "this is userPostA1\n", "this is userPostA2\n"}
-	_ = d.PreRunRegWithPriority("userPre2", 2, func() error {
+	_ = d.PreRunRegWithPriority("userPre2", 102, func() error {
 		fmt.Printf("this is userPre2\n")
 		gotPreStrings = append(gotPreStrings, "this is userPre2\n")
 		return nil
 	})
-	_ = d.PreRunRegWithPriority("userPre1", 1, func() error {
+	_ = d.PreRunRegWithPriority("userPre1", 101, func() error {
 		fmt.Printf("this is userPre1\n")
 		gotPreStrings = append(gotPreStrings, "this is userPre1\n")
 		return nil
 	})
-	_ = d.PostRunRegWithPriority("userPost2", 2, func() error {
+	_ = d.PostRunRegWithPriority("userPost2", 102, func() error {
 		fmt.Printf("this is userPost2\n")
 		gotPostStrings = append(gotPostStrings, "this is userPost2\n")
 		return nil
 	})
-	_ = d.PostRunRegWithPriority("userPost1", 1, func() error {
+	_ = d.PostRunRegWithPriority("userPost1", 101, func() error {
 		fmt.Printf("this is userPost1\n")
 		gotPostStrings = append(gotPostStrings, "this is userPost1\n")
 		return nil

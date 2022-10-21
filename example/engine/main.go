@@ -52,19 +52,19 @@ func main() {
 		}
 	}
 	d := dionysus.NewDio()
-	_ = d.PreRunRegWithPriority("userPre2", 2, func() error {
+	_ = d.PreRunRegWithPriority("userPre2", 102, func() error {
 		fmt.Printf("this is userPre2\n")
 		return nil
 	})
-	_ = d.PreRunRegWithPriority("userPre1", 1, func() error {
+	_ = d.PreRunRegWithPriority("userPre1", 101, func() error {
 		fmt.Printf("this is userPre1\n")
 		return nil
 	})
-	_ = d.PostRunRegWithPriority("userPost2", 2, func() error {
+	_ = d.PostRunRegWithPriority("userPost2", 102, func() error {
 		fmt.Printf("this is userPost2\n")
 		return nil
 	})
-	_ = d.PostRunRegWithPriority("userPost1", 1, func() error {
+	_ = d.PostRunRegWithPriority("userPost1", 101, func() error {
 		fmt.Printf("this is userPost1\n")
 		return nil
 	})
