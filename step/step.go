@@ -26,6 +26,11 @@ const UserAppendPrioritySteps = 10101
 
 type FuncStep func() error
 
+type InstanceStep struct {
+	StepName string
+	Func     FuncStep
+}
+
 func New() *Steps {
 	return &Steps{
 		q:           algs.NewPQ(),
@@ -34,50 +39,54 @@ func New() *Steps {
 	}
 }
 
-func (s *Steps) RegFirstSteps(value string, fn FuncStep) {
-	s.RegActionSteps(value, 1, fn)
+func (s *Steps) RegSysFirstSteps(instanceStep InstanceStep) {
+	s.RegActionSteps(instanceStep.StepName, 1, instanceStep.Func)
 }
 
-func (s *Steps) RegSecondSteps(value string, fn FuncStep) {
-	s.RegActionSteps(value, 2, fn)
+func (s *Steps) RegSysSecondSteps(instanceStep InstanceStep) {
+	s.RegActionSteps(instanceStep.StepName, 2, instanceStep.Func)
 }
 
-func (s *Steps) RegThirdSteps(value string, fn FuncStep) {
-	s.RegActionSteps(value, 3, fn)
+func (s *Steps) RegSysThirdSteps(instanceStep InstanceStep) {
+	s.RegActionSteps(instanceStep.StepName, 3, instanceStep.Func)
 }
 
-func (s *Steps) RegFourthSteps(value string, fn FuncStep) {
-	s.RegActionSteps(value, 4, fn)
+func (s *Steps) RegSysFourthSteps(instanceStep InstanceStep) {
+	s.RegActionSteps(instanceStep.StepName, 4, instanceStep.Func)
 }
 
-func (s *Steps) RegFifthSteps(value string, fn FuncStep) {
-	s.RegActionSteps(value, 5, fn)
+func (s *Steps) RegSysFifthSteps(instanceStep InstanceStep) {
+	s.RegActionSteps(instanceStep.StepName, 5, instanceStep.Func)
 }
 
-func (s *Steps) RegSixthSteps(value string, fn FuncStep) {
-	s.RegActionSteps(value, 6, fn)
+func (s *Steps) RegSysSixthSteps(instanceStep InstanceStep) {
+	s.RegActionSteps(instanceStep.StepName, 6, instanceStep.Func)
 }
 
-func (s *Steps) RegSeventhSteps(value string, fn FuncStep) {
-	s.RegActionSteps(value, 7, fn)
+func (s *Steps) RegSysSeventhSteps(instanceStep InstanceStep) {
+	s.RegActionSteps(instanceStep.StepName, 7, instanceStep.Func)
 }
 
-func (s *Steps) RegEighthSteps(value string, fn FuncStep) {
-	s.RegActionSteps(value, 8, fn)
+func (s *Steps) RegSysEighthSteps(instanceStep InstanceStep) {
+	s.RegActionSteps(instanceStep.StepName, 8, instanceStep.Func)
 }
 
-func (s *Steps) RegNinethSteps(value string, fn FuncStep) {
-	s.RegActionSteps(value, 9, fn)
+func (s *Steps) RegSysNinethSteps(instanceStep InstanceStep) {
+	s.RegActionSteps(instanceStep.StepName, 9, instanceStep.Func)
 }
 
-func (s *Steps) RegTenthSteps(value string, fn FuncStep) {
-	s.RegActionSteps(value, 10, fn)
+func (s *Steps) RegSysTenthSteps(instanceStep InstanceStep) {
+	s.RegActionSteps(instanceStep.StepName, 10, instanceStep.Func)
 }
 
-func (s *Steps) RegActionSteps(value string, priority int, fn FuncStep) {
+func (s *Steps) RegActionSteps(value string, priority int, fn FuncStep) error {
+	if fn == nil {
+		return fmt.Errorf("func stop should not be nil")
+	}
 	item := algs.NewItem(value, priority)
 	s.m.Store(item, fn)
 	s.q.Push(item)
+	return nil
 }
 
 func (s *Steps) RegActionStepsE(value string, priority int, fn FuncStep) error {

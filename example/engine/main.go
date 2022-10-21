@@ -4,6 +4,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/gowins/dionysus/step"
+	"log"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -57,24 +59,57 @@ func main() {
 	//dio init
 	d := dionysus.NewDio()
 	//todo  对齐sysPriority 10个定义、后续append
-	_ = d.PreRunRegWithPriority("userPre1", 102, func() error {
-		fmt.Printf("this is userPre1\n")
-		return nil
-	})
-	_ = d.PreRunRegWithPriority("userPre2", 102, func() error {
-		fmt.Printf("this is userPre2\n")
-		return nil
-	})
-
-	_ = d.PreRunStepsAppend("userPreA1", func() error {
-		fmt.Printf("this is userPreA1\n")
-		return nil
-	})
-	_ = d.PreRunStepsAppend("userPreA2", func() error {
-		fmt.Printf("this is userPreA2\n")
-		return nil
-	})
-
+	err := d.RegUserFirstPreRunStep(step.InstanceStep{
+		StepName: "userPre1", Func: func() error {
+			fmt.Printf("this is userPre1\n")
+			return nil
+		}})
+	if err != nil {
+		log.Printf("RegUserFirstPreRunStep error %v\n", err)
+		return
+	}
+	err = d.RegUserSecondPreRunStep(step.InstanceStep{
+		StepName: "userPre2", Func: func() error {
+			fmt.Printf("this is userPre2\n")
+			return nil
+		}})
+	if err != nil {
+		log.Printf("RegUserSecondPreRunStep error %v\n", err)
+		return
+	}
+	instanceSteps := []step.InstanceStep{
+		{
+			StepName: "userPreA1",
+			Func: func() error {
+				fmt.Printf("this is userPreA1\n")
+				return nil
+			},
+		},
+		{
+			StepName: "userPreA2",
+			Func: func() error {
+				fmt.Printf("this is userPreA2\n")
+				return nil
+			},
+		},
+	}
+	err = d.PreRunStepsAppend(instanceSteps...)
+	if err != nil {
+		log.Printf("PreRunStepsAppend error %v\n", err)
+		return
+	}
+	instancePostStep := step.InstanceStep{
+		StepName: "userPostA1",
+		Func: func() error {
+			fmt.Printf("this is userPostA1\n")
+			return nil
+		},
+	}
+	err = d.PostRunStepsAppend(instancePostStep)
+	if err != nil {
+		log.Printf("PostRunStepsAppend error %v\n", err)
+		return
+	}
 	if err := d.DioStart("testcmd", tc); err != nil {
 		fmt.Printf("DioStart err is %v\n", err)
 	}

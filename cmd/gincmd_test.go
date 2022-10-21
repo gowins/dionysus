@@ -10,12 +10,20 @@ func TestNewGinCommand(t *testing.T) {
 	gcmd := NewGinCommand()
 	gcmd.RegFlagSet(&pflag.FlagSet{})
 	gcmd.Flags()
-	gcmd.RegPostRunFunc("test", func() error {
+	err := gcmd.RegPostRunFunc("test", func() error {
 		return nil
 	})
-	gcmd.RegPreRunFunc("test1", func() error {
+	if err != nil {
+		t.Errorf("want error nil get error %v", err)
+		return
+	}
+	err = gcmd.RegPreRunFunc("test1", func() error {
 		return nil
 	})
+	if err != nil {
+		t.Errorf("want error nil get error %v", err)
+		return
+	}
 	gcmd.GetCmd()
 	gcmd.GetShutdownFunc()
 	go func() {

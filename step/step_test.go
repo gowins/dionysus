@@ -98,46 +98,46 @@ func TestStepsDefault(t *testing.T) {
 	wantStrings := []string{"haha1", "haha2", "haha3", "haha4", "haha5",
 		"haha6", "haha7", "haha8", "haha9", "haha10"}
 	gotStrings := []string{}
-	steps.RegTenthSteps("haha10", func() error {
+	steps.RegSysTenthSteps(InstanceStep{"haha10", func() error {
 		gotStrings = append(gotStrings, "haha10")
 		return nil
-	})
-	steps.RegNinethSteps("haha9", func() error {
+	}})
+	steps.RegSysNinethSteps(InstanceStep{"haha9", func() error {
 		gotStrings = append(gotStrings, "haha9")
 		return nil
-	})
-	steps.RegFirstSteps("haha1", func() error {
+	}})
+	steps.RegSysFirstSteps(InstanceStep{"haha1", func() error {
 		gotStrings = append(gotStrings, "haha1")
 		return nil
-	})
-	steps.RegSecondSteps("haha2", func() error {
+	}})
+	steps.RegSysSecondSteps(InstanceStep{"haha2", func() error {
 		gotStrings = append(gotStrings, "haha2")
 		return nil
-	})
-	steps.RegFourthSteps("haha4", func() error {
+	}})
+	steps.RegSysFourthSteps(InstanceStep{"haha4", func() error {
 		gotStrings = append(gotStrings, "haha4")
 		return nil
-	})
-	steps.RegFifthSteps("haha5", func() error {
+	}})
+	steps.RegSysFifthSteps(InstanceStep{"haha5", func() error {
 		gotStrings = append(gotStrings, "haha5")
 		return nil
-	})
-	steps.RegThirdSteps("haha3", func() error {
+	}})
+	steps.RegSysThirdSteps(InstanceStep{"haha3", func() error {
 		gotStrings = append(gotStrings, "haha3")
 		return nil
-	})
-	steps.RegSixthSteps("haha6", func() error {
+	}})
+	steps.RegSysSixthSteps(InstanceStep{"haha6", func() error {
 		gotStrings = append(gotStrings, "haha6")
 		return nil
-	})
-	steps.RegSeventhSteps("haha7", func() error {
+	}})
+	steps.RegSysSeventhSteps(InstanceStep{"haha7", func() error {
 		gotStrings = append(gotStrings, "haha7")
 		return nil
-	})
-	steps.RegEighthSteps("haha8", func() error {
+	}})
+	steps.RegSysEighthSteps(InstanceStep{"haha8", func() error {
 		gotStrings = append(gotStrings, "haha8")
 		return nil
-	})
+	}})
 	_ = steps.Run()
 	for index, str := range wantStrings {
 		if str != gotStrings[index] {

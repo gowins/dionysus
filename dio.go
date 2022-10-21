@@ -35,35 +35,42 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 
 	// global pre run function
 	d.cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		d.persistentPreRunE.RegFirstSteps("logger", func() error {
-			logger.Printf("add init logger here")
-			return nil
+		d.persistentPreRunE.RegSysFirstSteps(step.InstanceStep{
+			StepName: "logger", Func: func() error {
+				logger.Printf("add init logger here")
+				return nil
+			},
 		})
-		d.persistentPreRunE.RegSecondSteps("conf", func() error {
-			logger.Printf("add init conf here")
-			return nil
-		})
-		d.persistentPreRunE.RegThirdSteps("tracing", func() error {
-			logger.Printf("add init tracing here")
-			return nil
-		})
-		d.persistentPreRunE.RegFourthSteps("metric", func() error {
-			logger.Printf("add init metric here")
-			return nil
-		})
+		d.persistentPreRunE.RegSysSecondSteps(step.InstanceStep{
+			StepName: "conf", Func: func() error {
+				logger.Printf("add init conf here")
+				return nil
+			}})
+		d.persistentPreRunE.RegSysThirdSteps(step.InstanceStep{
+			StepName: "tracing", Func: func() error {
+				logger.Printf("add init tracing here")
+				return nil
+			}})
+		d.persistentPreRunE.RegSysFourthSteps(step.InstanceStep{
+			StepName: "metric", Func: func() error {
+				logger.Printf("add init metric here")
+				return nil
+			}})
 		return d.persistentPreRunE.Run()
 	}
 
 	// global post run function
 	d.cmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
-		d.persistentPostRunE.RegFirstSteps("tracing", func() error {
-			logger.Printf("add shutdown tracing here")
-			return nil
-		})
-		d.persistentPostRunE.RegSecondSteps("metric", func() error {
-			logger.Printf("add shutdown metric here")
-			return nil
-		})
+		d.persistentPostRunE.RegSysFirstSteps(step.InstanceStep{
+			StepName: "tracing", Func: func() error {
+				logger.Printf("add shutdown tracing here")
+				return nil
+			}})
+		d.persistentPostRunE.RegSysSecondSteps(step.InstanceStep{
+			StepName: "metric", Func: func() error {
+				logger.Printf("add shutdown metric here")
+				return nil
+			}})
 		return d.persistentPostRunE.Run()
 	}
 
@@ -81,32 +88,6 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 	return d.cmd.Execute()
 }
 
-// PreRunStepsAppend append step will exec after step with priority which define by func PreRunRegWithPriority
-func (d *Dio) PreRunStepsAppend(value string, fn func() error) error {
-	return d.persistentPreRunE.ActionStepsAppend(value, fn)
-}
-
-// PostRunStepsAppend append step will exec after step with priority which define by func PostRunRegWithPriority
-func (d *Dio) PostRunStepsAppend(value string, fn func() error) error {
-	return d.persistentPostRunE.ActionStepsAppend(value, fn)
-}
-
-// PreRunRegWithPriority priority < SystemPrioritySteps is reserve for system steps and priority > UserAppendPrioritySteps is reserve for append
-func (d *Dio) PreRunRegWithPriority(value string, priority int, fn func() error) error {
-	if priority <= step.SystemPrioritySteps || priority >= step.UserAppendPrioritySteps {
-		return fmt.Errorf("priority can not less than %v or bigger than %v", step.SystemPrioritySteps, step.UserAppendPrioritySteps)
-	}
-	return d.persistentPreRunE.RegActionStepsE(value, priority, fn)
-}
-
-// PostRunRegWithPriority priority < SystemPrioritySteps is reserve for system steps and priority > UserAppendPrioritySteps is reserve for append
-func (d *Dio) PostRunRegWithPriority(value string, priority int, fn func() error) error {
-	if priority <= step.SystemPrioritySteps || priority >= step.UserAppendPrioritySteps {
-		return fmt.Errorf("priority can not less than %v or bigger than %v", step.SystemPrioritySteps, step.UserAppendPrioritySteps)
-	}
-	return d.persistentPostRunE.RegActionStepsE(value, priority, fn)
-}
-
 // Deprecated:: Use DioStart
 var defaultDio = NewDio()
 
@@ -119,7 +100,7 @@ func Start(project string, cmds ...cmd.Commander) {
 
 type CobraRun func(cmd *cobra.Command, args []string) error
 
-func wrapCobrCmdRun(cR CobraRun, shutdownFunc func()) CobraRun {
+func wrapCobrCmdRun(cobraRun CobraRun, shutdownFunc func()) CobraRun {
 	finishChan := make(chan struct{})
 	return func(cmd *cobra.Command, args []string) error {
 		go func() {
@@ -129,19 +110,19 @@ func wrapCobrCmdRun(cR CobraRun, shutdownFunc func()) CobraRun {
 				}
 				finishChan <- struct{}{}
 			}()
-			err := cR(cmd, args)
+			err := cobraRun(cmd, args)
 			if err != nil {
 				logger.Printf("cobra cmd rune error %v\n", err)
 			}
 		}()
 		// TODO health check start
-		WaitingForNotifies(finishChan, shutdownFunc)
+		waitingForNotifies(finishChan, shutdownFunc)
 		return nil
 	}
 }
 
 // WaitingForNotifies todo shutdown 重复
-func WaitingForNotifies(finishChan <-chan struct{}, shutdownFunc func()) {
+func waitingForNotifies(finishChan <-chan struct{}, shutdownFunc func()) {
 	quit := make(chan os.Signal)
 	signal.Ignore(syscall.SIGHUP)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)

@@ -18,12 +18,14 @@ func TestRegShutdown(t *testing.T) {
 		return nil
 	})
 	if err != nil {
+		t.Errorf("want error nil get error %v", err)
 		return
 	}
 	err = c.RegPostRunFunc("test2", func() error {
 		return nil
 	})
 	if err != nil {
+		t.Errorf("want error nil get error %v", err)
 		return
 	}
 	c.RegFlagSet(&pflag.FlagSet{})
