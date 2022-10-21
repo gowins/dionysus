@@ -9,10 +9,8 @@ type Priority = int
 
 type Commander interface {
 	GetCmd() *cobra.Command
+	GetShutdownFunc() func()
 
 	RegFlagSet(set *pflag.FlagSet)
 	Flags() *pflag.FlagSet
-
-	RegPreRunFunc(value string, f func() error) error
-	RegPostRunFunc(value string, f func() error) error
 }

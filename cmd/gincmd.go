@@ -112,3 +112,7 @@ func (g *ginCommand) stopServer() {
 		os.Exit(1)
 	}
 }
+
+func (g *ginCommand) GetShutdownFunc() func() {
+	return g.stopServer
+}
