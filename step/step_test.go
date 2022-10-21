@@ -22,6 +22,10 @@ func TestSteps_Run(t *testing.T) {
 		return nil
 	})
 	_ = steps.Run()
+	if len(gotStrings) != 3 {
+		t.Errorf("want get 3 strings, get %v strings", len(gotStrings))
+		return
+	}
 	for index, str := range wantStrings {
 		if str != gotStrings[index] {
 			t.Errorf("get %v, want %v\n", gotStrings[index], str)
@@ -78,6 +82,60 @@ func TestSteps_RunE(t *testing.T) {
 	steps.RegActionStepsE("haha4", 231, nil)
 	steps.RegActionStepsE("haha5", 10002, func() error {
 		gotStrings = append(gotStrings, "haha5")
+		return nil
+	})
+	_ = steps.Run()
+	for index, str := range wantStrings {
+		if str != gotStrings[index] {
+			t.Errorf("get %v, want %v\n", gotStrings[index], str)
+			return
+		}
+	}
+}
+
+func TestStepsDefault(t *testing.T) {
+	steps := New()
+	wantStrings := []string{"haha1", "haha2", "haha3", "haha4", "haha5",
+		"haha6", "haha7", "haha8", "haha9", "haha10"}
+	gotStrings := []string{}
+	steps.RegTenthSteps("haha10", func() error {
+		gotStrings = append(gotStrings, "haha10")
+		return nil
+	})
+	steps.RegNinethSteps("haha9", func() error {
+		gotStrings = append(gotStrings, "haha9")
+		return nil
+	})
+	steps.RegFirstSteps("haha1", func() error {
+		gotStrings = append(gotStrings, "haha1")
+		return nil
+	})
+	steps.RegSecondSteps("haha2", func() error {
+		gotStrings = append(gotStrings, "haha2")
+		return nil
+	})
+	steps.RegFourthSteps("haha4", func() error {
+		gotStrings = append(gotStrings, "haha4")
+		return nil
+	})
+	steps.RegFifthSteps("haha5", func() error {
+		gotStrings = append(gotStrings, "haha5")
+		return nil
+	})
+	steps.RegThirdSteps("haha3", func() error {
+		gotStrings = append(gotStrings, "haha3")
+		return nil
+	})
+	steps.RegSixthSteps("haha6", func() error {
+		gotStrings = append(gotStrings, "haha6")
+		return nil
+	})
+	steps.RegSeventhSteps("haha7", func() error {
+		gotStrings = append(gotStrings, "haha7")
+		return nil
+	})
+	steps.RegEighthSteps("haha8", func() error {
+		gotStrings = append(gotStrings, "haha8")
 		return nil
 	})
 	_ = steps.Run()

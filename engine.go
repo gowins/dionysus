@@ -8,7 +8,6 @@ import (
 	"syscall"
 
 	"github.com/gowins/dionysus/cmd"
-	//logger "github.com/gowins/dionysus/log"
 	"github.com/gowins/dionysus/step"
 	"github.com/spf13/cobra"
 )
@@ -38,23 +37,20 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 
 	// global pre run function
 	d.cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		//logger.Setup()
-		// TODO register logger, conf, tracing, metric
-		//fmt.Printf("11111")
-		d.persistentPreRunE.RegActionSteps("logger", 1, func() error {
-			fmt.Printf("init logger here")
+		d.persistentPreRunE.RegFirstSteps("logger", func() error {
+			logger.Printf("add init logger here")
 			return nil
 		})
-		d.persistentPreRunE.RegActionSteps("conf", 2, func() error {
-			fmt.Printf("init conf here")
+		d.persistentPreRunE.RegSecondSteps("conf", func() error {
+			logger.Printf("add init conf here")
 			return nil
 		})
-		d.persistentPreRunE.RegActionSteps("tracing", 3, func() error {
-			fmt.Printf("init tracing here")
+		d.persistentPreRunE.RegThirdSteps("tracing", func() error {
+			logger.Printf("add init tracing here")
 			return nil
 		})
-		d.persistentPreRunE.RegActionSteps("metric", 4, func() error {
-			fmt.Printf("init metric here")
+		d.persistentPreRunE.RegFourthSteps("metric", func() error {
+			logger.Printf("add init metric here")
 			return nil
 		})
 		return d.persistentPreRunE.Run()
@@ -62,13 +58,12 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 
 	// global post run function
 	d.cmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
-		// TODO shutdown tracing, metric
-		d.persistentPostRunE.RegActionSteps("tracing", 1, func() error {
-			fmt.Printf("shutdown tracing here")
+		d.persistentPostRunE.RegFirstSteps("tracing", func() error {
+			logger.Printf("add shutdown tracing here")
 			return nil
 		})
-		d.persistentPostRunE.RegActionSteps("metric", 2, func() error {
-			fmt.Printf("shutdown metric here")
+		d.persistentPostRunE.RegSecondSteps("metric", func() error {
+			logger.Printf("add shutdown metric here")
 			return nil
 		})
 		return d.persistentPostRunE.Run()
@@ -77,6 +72,10 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 	// append other cmds
 	for _, c := range cmds {
 		originCmd := c.GetCmd()
+		if originCmd == nil {
+			logger.Printf("cmd can not be nil")
+			return fmt.Errorf("cmd can not be nil")
+		}
 		if originCmd.RunE != nil {
 			originCmd.RunE = WrapCobrCmdRunE(originCmd.RunE, c.GetShutdownFunc())
 		} else if originCmd.Run != nil {
@@ -85,11 +84,7 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 		d.cmd.AddCommand(originCmd)
 	}
 
-	// start
-	if err := d.cmd.Execute(); err != nil {
-		panic(err)
-	}
-	return nil
+	return d.cmd.Execute()
 }
 
 // PreRunStepsAppend append step will exec after step with priority which define by func PreRunRegWithPriority
@@ -102,20 +97,20 @@ func (d *Dio) PostRunStepsAppend(value string, fn func() error) error {
 	return d.persistentPostRunE.ActionStepsAppend(value, fn)
 }
 
+// PreRunRegWithPriority priority < SystemPrioritySteps is reserve for system steps and priority > UserAppendPrioritySteps is reserve for append
 func (d *Dio) PreRunRegWithPriority(value string, priority int, fn func() error) error {
-	if priority > 10000 {
-		return fmt.Errorf("priority can not bigger than 10000")
+	if priority <= step.SystemPrioritySteps || priority >= step.UserAppendPrioritySteps {
+		return fmt.Errorf("priority can not less than %v or bigger than %v", step.SystemPrioritySteps, step.UserAppendPrioritySteps)
 	}
-	// priority < 100 is reserve for system steps
-	return d.persistentPreRunE.RegActionStepsE(value, priority+100, fn)
+	return d.persistentPreRunE.RegActionStepsE(value, priority, fn)
 }
 
+// PostRunRegWithPriority priority < SystemPrioritySteps is reserve for system steps and priority > UserAppendPrioritySteps is reserve for append
 func (d *Dio) PostRunRegWithPriority(value string, priority int, fn func() error) error {
-	if priority > 10000 {
-		return fmt.Errorf("priority can not bigger than 10000")
+	if priority <= step.SystemPrioritySteps || priority >= step.UserAppendPrioritySteps {
+		return fmt.Errorf("priority can not less than %v or bigger than %v", step.SystemPrioritySteps, step.UserAppendPrioritySteps)
 	}
-	// priority < 100 is reserve for system steps
-	return d.persistentPostRunE.RegActionStepsE(value, priority+100, fn)
+	return d.persistentPostRunE.RegActionStepsE(value, priority, fn)
 }
 
 // Deprecated:: Use DioStart
@@ -182,7 +177,7 @@ func WaitingForNotifies(finishChan <-chan struct{}, shutdownFunc func()) {
 	case <-quit:
 		logger.Printf("[info] Shuting down ...\n")
 		if shutdownFunc == nil {
-			fmt.Printf("shutdownFunc is nil")
+			logger.Printf("shutdownFunc is nil")
 		} else {
 			shutdownFunc()
 		}
