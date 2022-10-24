@@ -4,9 +4,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/gowins/dionysus/step"
-	"log"
 	"time"
+
+	"github.com/gowins/dionysus/log"
+	"github.com/gowins/dionysus/step"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -65,7 +66,7 @@ func main() {
 			return nil
 		}})
 	if err != nil {
-		log.Printf("RegUserFirstPreRunStep error %v\n", err)
+		log.Infof("RegUserFirstPreRunStep error %v\n", err)
 		return
 	}
 	err = d.RegUserSecondPreRunStep(step.InstanceStep{
@@ -74,7 +75,7 @@ func main() {
 			return nil
 		}})
 	if err != nil {
-		log.Printf("RegUserSecondPreRunStep error %v\n", err)
+		log.Infof("RegUserSecondPreRunStep error %v\n", err)
 		return
 	}
 	instanceSteps := []step.InstanceStep{
@@ -95,7 +96,7 @@ func main() {
 	}
 	err = d.PreRunStepsAppend(instanceSteps...)
 	if err != nil {
-		log.Printf("PreRunStepsAppend error %v\n", err)
+		log.Infof("PreRunStepsAppend error %v\n", err)
 		return
 	}
 	instancePostStep := step.InstanceStep{
@@ -107,7 +108,7 @@ func main() {
 	}
 	err = d.PostRunStepsAppend(instancePostStep)
 	if err != nil {
-		log.Printf("PostRunStepsAppend error %v\n", err)
+		log.Infof("PostRunStepsAppend error %v\n", err)
 		return
 	}
 	if err := d.DioStart("testcmd", tc); err != nil {
