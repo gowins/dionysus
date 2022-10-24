@@ -10,13 +10,11 @@ import (
 var (
 	configFile = "/etc/conf/config.yaml"
 	xviperEnv  = "DIO_XVIPER_CONF"
-
-	viperX *viper.Viper
 )
 
-// Viperx get *viper.Viper
-func Viperx() *viper.Viper {
-	return viperX
+// ViperX get *viper.Viper
+func ViperX() *viper.Viper {
+	return viper.GetViper()
 }
 
 // ViperFunc 设置viper.Viper属性函数
@@ -62,12 +60,28 @@ func WithDecoderOpts(opts ...viper.DecoderConfigOption) ViperOptFn {
 }
 
 // SetUp 根据环境变量配置获取配置文件路径，viper.Viper读取配置文件中的内容加载到内存中
-// DIO_XVIPER_CONF = /etc/config/config.yaml
+//
+// DIO_XVIPER_CONF = /etc/config/config.toml
+//
 // 若rawVal不为空，则会把map[string]any解析到结构体中，例如
 //
 //	type Example struct {
-//			Name string `mapstructure:"name"`
-//			Age int `mapstructure:"int"`
+//		Name string `mapstructure:"name"`
+//		Age int `mapstructure:"int"`
+//	}
+//
+// [dependencies]
+//
+// kio = "1.0"
+//
+// 解析toml文件，设置上述环境变量DIO_XVIPER_CONF，调用如下代码
+//
+//	func ExampleSetup_k() {
+//		_, err := xviper.SetUp(nil, xviper.WithOpts(viper.KeyDelimiter("_")))
+//		if err != nil {
+//			panic(err)
+//		}
+//		fmt.Println(viper.GetString("dependencies_kio"))
 //	}
 func SetUp(rawVal any, opts ...ViperOptFn) (*viper.Viper, error) {
 	vOpt := &ViperOpt{}
@@ -95,7 +109,8 @@ func SetUp(rawVal any, opts ...ViperOptFn) (*viper.Viper, error) {
 			return nil, err
 		}
 	}
-	viperX = v
+	ov := viper.GetViper()
+	*ov = *v
 	return v, nil
 }
 

@@ -19,7 +19,12 @@ func initDir(t *testing.T) (afero.Fs, string, string) {
 	fp := absFilePath(t, filepath.Join(dir, "config.yaml"))
 	file, err := memFs.Create(fp)
 	convey.So(err, convey.ShouldBeNil)
-	_, err = file.Write([]byte(`key: value`))
+	_, err = file.Write([]byte(`
+key: "value"
+ffi: 
+  c: "c_run"
+  go: "go_run"`))
+
 	convey.So(err, convey.ShouldBeNil)
 	file.Close()
 	return memFs, dir, fp
@@ -32,7 +37,7 @@ func TestViperx(t *testing.T) {
 		os.Setenv(xviperEnv, fp)
 		_, err := SetUp(nil, WithFns(func(v *viper.Viper) { v.SetFs(fs) }))
 		convey.So(err, convey.ShouldBeNil)
-		convey.So(viperX, convey.ShouldNotBeNil)
+		convey.So(ViperX(), convey.ShouldNotBeNil)
 	})
 }
 
@@ -46,9 +51,12 @@ func TestSetUp(t *testing.T) {
 			convey.So(err, convey.ShouldNotBeNil)
 		})
 		convey.Convey("set env", func() {
-			v, err := SetUp(nil, WithEnvName(xviperEnv), WithFns(func(v *viper.Viper) { v.SetFs(memFs) }), WithOpts(viper.KeyDelimiter(".")))
+			v, err := SetUp(nil, WithEnvName(xviperEnv), WithFns(func(v *viper.Viper) { v.SetFs(memFs) }), WithOpts(viper.KeyDelimiter("_")))
 			convey.So(err, convey.ShouldBeNil)
 			convey.So(v.GetString("key"), convey.ShouldEqual, "value")
+			convey.So(viper.GetString("key"), convey.ShouldEqual, "value")
+			convey.So(viper.GetString("ffi_go"), convey.ShouldEqual, "go_run")
+			convey.So(v.GetString("ffi_c"), convey.ShouldEqual, "c_run")
 		})
 		convey.Convey("unmarshal", func() {
 			type kv struct {
