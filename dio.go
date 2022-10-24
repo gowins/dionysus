@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/gowins/dionysus/cmd"
+	"github.com/gowins/dionysus/log"
 	"github.com/gowins/dionysus/step"
 	"github.com/spf13/cobra"
 )
@@ -38,6 +39,7 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 		d.persistentPreRunE.RegSysFirstSteps(step.InstanceStep{
 			StepName: "logger", Func: func() error {
 				logger.Printf("add init logger here")
+				log.Setup(log.SetProjectName(projectName), log.WithWriter(os.Stdout))
 				return nil
 			},
 		})
