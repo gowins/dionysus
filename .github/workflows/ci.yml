@@ -2,6 +2,9 @@ name: Test and coverage
 
 on: [pull_request]
 
+runs:
+  using: 'node16'
+
 jobs:
   build:
     runs-on: ubuntu-latest
