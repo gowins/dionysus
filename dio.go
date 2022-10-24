@@ -38,23 +38,19 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 		d.persistentPreRunE.RegSysFirstSteps(step.InstanceStep{
 			StepName: "logger", Func: func() error {
 				log.Setup(log.SetProjectName(projectName), log.WithWriter(os.Stdout))
-				log.Info("add init logger here")
 				return nil
 			},
 		})
 		d.persistentPreRunE.RegSysSecondSteps(step.InstanceStep{
 			StepName: "conf", Func: func() error {
-				log.Info("add init conf here")
 				return nil
 			}})
 		d.persistentPreRunE.RegSysThirdSteps(step.InstanceStep{
 			StepName: "tracing", Func: func() error {
-				log.Info("add init tracing here")
 				return nil
 			}})
 		d.persistentPreRunE.RegSysFourthSteps(step.InstanceStep{
 			StepName: "metric", Func: func() error {
-				log.Info("add init metric here")
 				return nil
 			}})
 		return d.persistentPreRunE.Run()
@@ -64,12 +60,10 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 	d.cmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
 		d.persistentPostRunE.RegSysFirstSteps(step.InstanceStep{
 			StepName: "tracing", Func: func() error {
-				log.Info("add shutdown tracing here")
 				return nil
 			}})
 		d.persistentPostRunE.RegSysSecondSteps(step.InstanceStep{
 			StepName: "metric", Func: func() error {
-				log.Info("add shutdown metric here")
 				return nil
 			}})
 		return d.persistentPostRunE.Run()
@@ -107,7 +101,7 @@ func wrapCobrCmdRun(cobraRun CobraRun, shutdownFunc func()) CobraRun {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Info("[error] Panic occurred in start process: %#v\n", r)
+					log.Infof("[error] Panic occurred in start process: %#v\n", r)
 				}
 				finishChan <- struct{}{}
 			}()
