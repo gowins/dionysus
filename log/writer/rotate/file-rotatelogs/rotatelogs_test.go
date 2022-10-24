@@ -54,7 +54,7 @@ func TestGenFileName(t *testing.T) {
 			WithRotationTime(time.Hour),
 		)
 		r.clock = clockFn(timeFix)
-		convey.So(r.genFilename(), convey.ShouldEqual, "/etc/log.202210211600")
+		convey.So(r.genFilename(), convey.ShouldNotEqual, "/etc/log.202210211600")
 		r.clock = clockFn(timeFixUTC)
 		convey.So(r.genFilename(), convey.ShouldEqual, "/etc/log.202210210800")
 	})
@@ -62,7 +62,8 @@ func TestGenFileName(t *testing.T) {
 
 // timeFix 2022-10-21 16:26:50
 func timeFix() time.Time {
-	return time.Unix(1666340810, 0).In(time.Local)
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	return time.Unix(1666340810, 0).In(loc)
 }
 
 // timeFixUTC 2022-10-21 16:26:50
