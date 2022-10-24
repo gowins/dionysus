@@ -36,12 +36,15 @@ func (r rlogger) OutputPath(path string) (err error) {
 	return nil
 }
 
-func init() {
+func SetupLogger(level log.Level, pname string) {
 	dl, _ := log.New(log.ZapLogger, []log.Option{ // 根据实际需求添加option
-		log.WithLevelEnabler(log.InfoLevel),
+		log.WithLevelEnabler(level),
 		log.WithEncoderCfg(log.NewEncoderConfig()),
 		log.AddCallerSkip(3),
 		log.AddCaller(),
+		log.Fields(map[string]interface{}{
+			"app": pname,
+		}),
 	}...)
 	rlog.SetLogLevel("info")
 	rlog.SetLogger(&rlogger{
