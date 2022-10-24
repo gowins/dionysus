@@ -22,6 +22,7 @@ func TestSetUp(t *testing.T) {
 		}, convey.ShouldPanic)
 		w := &nopWriter{}
 		convey.So(func() {
+			projectName = "testing"
 			Setup(WithWriter(w))
 			WithField("stacktrace", string(debug.Stack())).
 				Errorf("[error] Panic occurred in start process: %#v", "testing")
