@@ -62,7 +62,7 @@ func TestGenFileName(t *testing.T) {
 
 // timeFix 2022-10-21 16:26:50
 func timeFix() time.Time {
-	return time.Unix(1666340810, 0)
+	return time.Unix(1666340810, 0).In(time.Local)
 }
 
 // timeFixUTC 2022-10-21 16:26:50
