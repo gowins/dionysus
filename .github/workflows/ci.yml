@@ -2,11 +2,10 @@ name: Test and coverage
 
 on: [pull_request]
 
-
 jobs:
-  runs:
-    using: 'node16'
   build:
+    runs:
+      using: 'node16'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
