@@ -2,7 +2,6 @@ package dionysus
 
 import (
 	"fmt"
-	logger "log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -38,24 +37,24 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 	d.cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		d.persistentPreRunE.RegSysFirstSteps(step.InstanceStep{
 			StepName: "logger", Func: func() error {
-				logger.Printf("add init logger here")
 				log.Setup(log.SetProjectName(projectName), log.WithWriter(os.Stdout))
+				log.Info("add init logger here")
 				return nil
 			},
 		})
 		d.persistentPreRunE.RegSysSecondSteps(step.InstanceStep{
 			StepName: "conf", Func: func() error {
-				logger.Printf("add init conf here")
+				log.Info("add init conf here")
 				return nil
 			}})
 		d.persistentPreRunE.RegSysThirdSteps(step.InstanceStep{
 			StepName: "tracing", Func: func() error {
-				logger.Printf("add init tracing here")
+				log.Info("add init tracing here")
 				return nil
 			}})
 		d.persistentPreRunE.RegSysFourthSteps(step.InstanceStep{
 			StepName: "metric", Func: func() error {
-				logger.Printf("add init metric here")
+				log.Info("add init metric here")
 				return nil
 			}})
 		return d.persistentPreRunE.Run()
@@ -65,12 +64,12 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 	d.cmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
 		d.persistentPostRunE.RegSysFirstSteps(step.InstanceStep{
 			StepName: "tracing", Func: func() error {
-				logger.Printf("add shutdown tracing here")
+				log.Info("add shutdown tracing here")
 				return nil
 			}})
 		d.persistentPostRunE.RegSysSecondSteps(step.InstanceStep{
 			StepName: "metric", Func: func() error {
-				logger.Printf("add shutdown metric here")
+				log.Info("add shutdown metric here")
 				return nil
 			}})
 		return d.persistentPostRunE.Run()
@@ -80,7 +79,7 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 	for _, c := range cmds {
 		originCmd := c.GetCmd()
 		if originCmd == nil {
-			logger.Printf("cmd can not be nil")
+			log.Info("cmd can not be nil")
 			return fmt.Errorf("cmd can not be nil")
 		}
 		originCmd.RunE = wrapCobrCmdRun(originCmd.RunE, c.GetShutdownFunc())
@@ -108,13 +107,13 @@ func wrapCobrCmdRun(cobraRun CobraRun, shutdownFunc func()) CobraRun {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					logger.Printf("[error] Panic occurred in start process: %#v\n", r)
+					log.Info("[error] Panic occurred in start process: %#v\n", r)
 				}
 				finishChan <- struct{}{}
 			}()
 			err := cobraRun(cmd, args)
 			if err != nil {
-				logger.Printf("cobra cmd rune error %v\n", err)
+				log.Info("cobra cmd rune error %v\n", err)
 			}
 		}()
 		// TODO health check start
@@ -130,22 +129,22 @@ func waitingForNotifies(finishChan <-chan struct{}, shutdownFunc func()) {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Printf("[error] Panic occurred in shutdown process: %s\n", r)
+			log.Infof("[error] Panic occurred in shutdown process: %s\n", r)
 			os.Exit(3)
 		}
 	}()
 
 	select {
 	case <-quit:
-		logger.Printf("[info] Shuting down ...\n")
+		log.Info("[info] Shuting down ...\n")
 		if shutdownFunc == nil {
-			logger.Printf("shutdownFunc is nil")
+			log.Info("shutdownFunc is nil")
 		} else {
 			shutdownFunc()
 		}
 	case <-finishChan:
-		logger.Printf("[Dio] Finish.\n")
+		log.Info("[Dio] Finish.\n")
 	}
 
-	logger.Printf("[Dio] Exited.\n")
+	log.Info("[Dio] Exited.\n")
 }
