@@ -2,11 +2,17 @@ package dionysus
 
 import (
 	"fmt"
-	"github.com/gowins/dionysus/step"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
+	"io"
+	"os"
+	"syscall"
 	"testing"
 	"time"
+
+	"github.com/gowins/dionysus/log"
+	"github.com/gowins/dionysus/step"
+	"github.com/smartystreets/goconvey/convey"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 type testCmd struct {
@@ -30,6 +36,71 @@ func (tc *testCmd) RegFlagSet(set *pflag.FlagSet) {
 
 func (tc *testCmd) Flags() *pflag.FlagSet {
 	return nil
+}
+
+func TestDioStartCmd(t *testing.T) {
+	convey.Convey("commander", t, func() {
+		tc := &testCmd{
+			// cmd:
+			cmd:      nil,
+			stopChan: make(chan struct{}),
+		}
+		dio := NewDio()
+		err := dio.DioStart("test_nil_cmd", tc)
+		if err == nil {
+			t.Errorf("expetced error is not nil, got %v", err)
+		}
+		convey.So(err, convey.ShouldNotBeNil)
+	})
+}
+
+func TestWrapCobraRun(t *testing.T) {
+	log.Setup(log.SetProjectName("testing"), log.WithWriter(io.Discard))
+	convey.Convey("test wrap cobra run", t, func() {
+		convey.Convey("wrap panic", func() {
+			w1 := wrapCobrCmdRun(func(_ *cobra.Command, _ []string) error {
+				s := make([]int, 1)
+				fmt.Println(s[1])
+				return nil
+			}, func() {})
+			cmd := &cobra.Command{Use: "testCobraRun", Short: "wrapp cobra run"}
+			ars := make([]string, 0)
+			err := w1(cmd, ars)
+			convey.So(err, convey.ShouldBeNil)
+		})
+		convey.Convey("wrap return error", func() {
+			w1 := wrapCobrCmdRun(func(_ *cobra.Command, _ []string) error {
+				return fmt.Errorf("just test wrap return error")
+			}, func() {})
+			cmd := &cobra.Command{Use: "testCobraRun", Short: "wrapp cobra run"}
+			ars := make([]string, 0)
+			err := w1(cmd, ars)
+			convey.So(err, convey.ShouldBeNil)
+		})
+	})
+}
+
+// TestWaitForNotify test
+func TestWaitingForNotifies(t *testing.T) {
+	log.Setup(log.SetProjectName("testing"), log.WithWriter(io.Discard))
+	convey.Convey("waiting for notifies", t, func() {
+		convey.Convey("quit SIGQUIT signal", func() {
+			convey.So(func() {
+				finishChan := make(chan struct{})
+				quit := make(chan os.Signal, 1)
+				quit <- syscall.SIGQUIT
+				waitingForNotifies(quit, finishChan, func() {})
+			}, convey.ShouldNotPanic)
+		})
+		convey.Convey("quit SIGQUIT signal nil shout down", func() {
+			convey.So(func() {
+				finishChan := make(chan struct{})
+				quit := make(chan os.Signal, 1)
+				quit <- syscall.SIGQUIT
+				waitingForNotifies(quit, finishChan, nil)
+			}, convey.ShouldNotPanic)
+		})
+	})
 }
 
 func TestDio_DioStart(t *testing.T) {

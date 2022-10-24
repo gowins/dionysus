@@ -73,7 +73,6 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 	for _, c := range cmds {
 		originCmd := c.GetCmd()
 		if originCmd == nil {
-			log.Info("cmd can not be nil")
 			return fmt.Errorf("cmd can not be nil")
 		}
 		originCmd.RunE = wrapCobrCmdRun(originCmd.RunE, c.GetShutdownFunc())
@@ -97,6 +96,7 @@ type CobraRun func(cmd *cobra.Command, args []string) error
 
 func wrapCobrCmdRun(cobraRun CobraRun, shutdownFunc func()) CobraRun {
 	finishChan := make(chan struct{})
+	quit := make(chan os.Signal, 1)
 	return func(cmd *cobra.Command, args []string) error {
 		go func() {
 			defer func() {
@@ -107,18 +107,17 @@ func wrapCobrCmdRun(cobraRun CobraRun, shutdownFunc func()) CobraRun {
 			}()
 			err := cobraRun(cmd, args)
 			if err != nil {
-				log.Info("cobra cmd rune error %v\n", err)
+				log.Infof("cobra cmd rune error %v\n", err)
 			}
 		}()
 		// TODO health check start
-		waitingForNotifies(finishChan, shutdownFunc)
+		waitingForNotifies(quit, finishChan, shutdownFunc)
 		return nil
 	}
 }
 
 // WaitingForNotifies todo shutdown 重复
-func waitingForNotifies(finishChan <-chan struct{}, shutdownFunc func()) {
-	quit := make(chan os.Signal)
+func waitingForNotifies(quit chan os.Signal, finishChan <-chan struct{}, shutdownFunc func()) {
 	signal.Ignore(syscall.SIGHUP)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer func() {
