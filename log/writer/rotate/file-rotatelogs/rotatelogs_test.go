@@ -54,7 +54,7 @@ func TestGenFileName(t *testing.T) {
 			WithRotationTime(time.Hour),
 		)
 		r.clock = clockFn(timeFix)
-		convey.So(r.genFilename(), convey.ShouldNotEqual, "/etc/log.202210211600")
+		convey.So(r.genFilename(), convey.ShouldEqual, "/etc/log.202210211600")
 		r.clock = clockFn(timeFixUTC)
 		convey.So(r.genFilename(), convey.ShouldEqual, "/etc/log.202210210800")
 	})
