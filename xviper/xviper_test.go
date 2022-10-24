@@ -46,7 +46,7 @@ func TestSetUp(t *testing.T) {
 			convey.So(err, convey.ShouldNotBeNil)
 		})
 		convey.Convey("set env", func() {
-			v, err := SetUp(nil, WithEnvName(xviperEnv), WithFns(func(v *viper.Viper) { v.SetFs(memFs) }))
+			v, err := SetUp(nil, WithEnvName(xviperEnv), WithFns(func(v *viper.Viper) { v.SetFs(memFs) }), WithOpts(viper.KeyDelimiter(".")))
 			convey.So(err, convey.ShouldBeNil)
 			convey.So(v.GetString("key"), convey.ShouldEqual, "value")
 		})
@@ -55,7 +55,7 @@ func TestSetUp(t *testing.T) {
 				Key string `mapstructure:"key"`
 			}
 			var s kv
-			v, err := SetUp(&s, WithEnvName(xviperEnv), WithFns(func(v *viper.Viper) { v.SetFs(memFs) }))
+			v, err := SetUp(&s, WithEnvName(xviperEnv), WithFns(func(v *viper.Viper) { v.SetFs(memFs) }, func(v *viper.Viper) { v.AutomaticEnv() }))
 			convey.So(err, convey.ShouldBeNil)
 			convey.So(v.GetString("key"), convey.ShouldEqual, "value")
 			convey.So(s.Key, convey.ShouldEqual, "value")
