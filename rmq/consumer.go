@@ -1,10 +1,17 @@
 package rmq
 
 import (
+	"sync"
+
 	"github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/consumer"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/rs/xid"
+)
+
+var (
+	consumerPool sync.Map
+	cm           sync.Mutex
 )
 
 type ConsumerConfig struct {
@@ -39,4 +46,26 @@ func NewConsumer(c *ConsumerConfig) (rocketmq.PushConsumer, error) {
 	}
 
 	return client, nil
+}
+
+func GetConsumer(name string, opts ...consumer.Option) (rocketmq.PushConsumer, error) {
+	if val, ok := consumerPool.Load(name); ok {
+		return val.(rocketmq.PushConsumer), nil
+	}
+
+	cm.Lock()
+	defer cm.Unlock()
+
+	if val, ok := consumerPool.Load(name); ok {
+		return val.(rocketmq.PushConsumer), nil
+	}
+
+	c, err := consumer.NewPushConsumer(opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	consumerPool.Store(name, c)
+
+	return c, nil
 }
