@@ -11,3 +11,5 @@ coverage:
 flags:
   unit:
     carryforward: true
+ignore:
+  - "example"
