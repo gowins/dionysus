@@ -42,7 +42,6 @@ func NewGinCommand() *ginCommand {
 		ZeroGinRouter: ginx.NewZeroGinRouter(),
 		cmd:           &cobra.Command{Use: GinUse, Short: "Run as go-zero server"},
 		server:        &http.Server{},
-		finishChan:    make(chan struct{}),
 	}
 }
 
