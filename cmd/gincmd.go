@@ -42,6 +42,7 @@ func NewGinCommand() *ginCommand {
 		ZeroGinRouter: ginx.NewZeroGinRouter(),
 		cmd:           &cobra.Command{Use: GinUse, Short: "Run as go-zero server"},
 		server:        &http.Server{},
+		finishChan:    make(chan struct{}),
 	}
 }
 
@@ -50,6 +51,7 @@ func (t *ginCommand) GetCmd() *cobra.Command {
 		if envAddr := os.Getenv(WebServerAddr); envAddr != "" {
 			defaultWebServerAddr = envAddr
 		}
+		t.cmd.Flags().StringVarP(&t.server.Addr, addrFlagName, "a", defaultWebServerAddr, "the http server address")
 	})
 
 	t.cmd.RunE = func(cmd *cobra.Command, args []string) error {

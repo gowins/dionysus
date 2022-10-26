@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"github.com/gowins/dionysus"
 	"github.com/gowins/dionysus/cmd"
 	"github.com/gowins/dionysus/ginx"
+	"net/http"
+	"time"
 )
 
 func main() {
@@ -16,8 +15,14 @@ func main() {
 	gcmd.Handle(http.MethodGet, "/test", func(c *gin.Context) ginx.Render {
 		return ginx.Success(time.Now().Unix())
 	})
+
+	//注意这时返回默认http code状态码200, 这里的code不是事http code
+	gcmd.Handle(http.MethodGet, "/test/error", func(c *gin.Context) ginx.Render {
+		return ginx.Error(ginx.NewGinError(500100, "内部错误"))
+	})
+
 	demogroup := gcmd.Group("/demogroup")
-	demogroup.Use(demoMiddle)
+	demogroup.Use(demoMiddle, demoMiddle2)
 	demogroup.Handle(http.MethodGet, "/demoroute", func(c *gin.Context) ginx.Render {
 		//会拿到demoMiddle中间件塞入gin.Contex的值
 		va, ok := c.Get("demoMiddle")
@@ -27,16 +32,12 @@ func main() {
 		return ginx.Success(va)
 	})
 
-	//注意这时的http code返回是200, 这里的code不是事http code
-	gcmd.Handle(http.MethodGet, "/test/error", func(c *gin.Context) ginx.Render {
-		return ginx.Error(ginx.NewGinError(500100, "内部错误"))
-	})
-
-	//会返回http code 500错误码
+	//会返回http code 504错误码
 	demogroup.Handle(http.MethodGet, "/error", func(c *gin.Context) ginx.Render {
-		//c.Status(http.StatusInternalServerError)
-		c.JSON(http.StatusInternalServerError, "InternalServerError")
-		return nil
+		// 设置http返回状态码
+		c.Status(http.StatusGatewayTimeout)
+		//c.JSON(http.StatusInternalServerError, "InternalServerError")
+		return ginx.Error(ginx.NewGinError(500100, "内部错误"))
 	})
 	d := dionysus.NewDio()
 	if err := d.DioStart("ginxdemo", gcmd); err != nil {
@@ -46,6 +47,14 @@ func main() {
 
 func demoMiddle(c *gin.Context) {
 	demoValue := time.Now().String() + " demoMiddle"
+	fmt.Printf("this demoMiddle1\n")
 	c.Set("demoMiddle", demoValue)
+	c.Next()
+}
+
+func demoMiddle2(c *gin.Context) {
+	demoValue := time.Now().String() + " demoMiddle2"
+	fmt.Printf("this demoMiddle2\n")
+	c.Set("demoMiddle2", demoValue)
 	c.Next()
 }

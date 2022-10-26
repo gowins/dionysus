@@ -2,6 +2,7 @@ package dionysus
 
 import (
 	"fmt"
+	"github.com/gowins/dionysus/cmd"
 	"io"
 	"os"
 	"syscall"
