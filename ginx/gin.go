@@ -10,7 +10,7 @@ import (
 type ZeroGinRouter interface {
 	GinRouters
 	// Group create and return new router group
-	Group(path string, handlers ...GinHandler) ZeroGinRouter
+	Group(path string) ZeroGinRouter
 	// Handler return http.Handler
 	Handler() http.Handler
 }
@@ -37,8 +37,8 @@ func NewZeroGinRouter(opts ...GinOption) ZeroGinRouter {
 }
 
 // Group create and return new router group
-func (r *ginRouter) Group(path string, handlers ...GinHandler) ZeroGinRouter {
-	g := r.group.Group(path, buildGinHandler(handlers...)...)
+func (r *ginRouter) Group(path string) ZeroGinRouter {
+	g := r.group.Group(path)
 	return &ginRouter{
 		ginGroup: ginGroup{
 			g: g,

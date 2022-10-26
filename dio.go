@@ -75,11 +75,29 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 		if originCmd == nil {
 			return fmt.Errorf("cmd can not be nil")
 		}
+		d.addHealthCmd(originCmd.Use)
 		originCmd.RunE = wrapCobrCmdRun(originCmd.RunE, c.GetShutdownFunc())
 		d.cmd.AddCommand(originCmd)
 	}
 
 	return d.cmd.Execute()
+}
+
+func (d *Dio) addHealthCmd(use string) {
+	switch use {
+	case cmd.CtlUse:
+		d.cmd.AddCommand(cmd.GetCtlLivenessCmd())
+		d.cmd.AddCommand(cmd.GetCtlReadinessCmd())
+		d.cmd.AddCommand(cmd.GetCtlStartupCmd())
+	case cmd.GinUse:
+		d.cmd.AddCommand(cmd.GetHttpLivenessCmd())
+		d.cmd.AddCommand(cmd.GetHttpReadinessCmd())
+		d.cmd.AddCommand(cmd.GetHttpStartupCmd())
+	case cmd.GrpcUse:
+		d.cmd.AddCommand(cmd.GetGrpcLivenessCmd())
+		d.cmd.AddCommand(cmd.GetGrpcReadinessCmd())
+		d.cmd.AddCommand(cmd.GetGrpcStartupCmd())
+	}
 }
 
 // Deprecated:: Use DioStart
@@ -110,13 +128,11 @@ func wrapCobrCmdRun(cobraRun CobraRun, shutdownFunc func()) CobraRun {
 				log.Infof("cobra cmd rune error %v\n", err)
 			}
 		}()
-		// TODO health check start
 		waitingForNotifies(quit, finishChan, shutdownFunc)
 		return nil
 	}
 }
 
-// WaitingForNotifies todo shutdown 重复
 func waitingForNotifies(quit chan os.Signal, finishChan <-chan struct{}, shutdownFunc func()) {
 	signal.Ignore(syscall.SIGHUP)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)

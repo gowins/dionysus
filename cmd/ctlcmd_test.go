@@ -1,43 +1,43 @@
 package cmd
 
 import (
-	"context"
-	"testing"
-	"time"
-
+	"fmt"
 	"github.com/spf13/pflag"
-
-	. "github.com/smartystreets/goconvey/convey"
+	"testing"
 )
 
-func TestRegShutdown(t *testing.T) {
-	c := NewCtlCommand()
-	c.GetShutdownFunc()
-	c.GetCmd()
-	err := c.RegPreRunFunc("test", func() error {
-		return nil
-	})
-	if err != nil {
-		t.Errorf("want error nil get error %v", err)
+func TestNewCtlCommand(t *testing.T) {
+	ctl := NewCtlCommand()
+	err := ctl.RegShutdownFunc(nil)
+	if err == nil {
+		t.Errorf("want error not nil")
 		return
 	}
-	err = c.RegPostRunFunc("test2", func() error {
-		return nil
-	})
-	if err != nil {
-		t.Errorf("want error nil get error %v", err)
+	err = ctl.RegRunFunc(nil)
+	if err == nil {
+		t.Errorf("want error not nil")
 		return
 	}
-	c.RegFlagSet(&pflag.FlagSet{})
-	c.Flags()
-	Convey("", t, func() {
-		So(c.RegRunFunc(func(ctx context.Context) {
-			time.Sleep(1000000)
-		}),
-			ShouldBeNil)
-		So(c.RegShutdownFunc(nil), ShouldBeError)
-		f := func(ctx context.Context) {}
-		So(c.RegShutdownFunc(f), ShouldBeNil)
-		So(c.shutdownFunc, ShouldEqual, f)
+	_ = ctl.RegShutdownFunc(func() {
+		fmt.Printf("this is shutdown\n")
 	})
+
+	_ = ctl.RegRunFunc(func() error {
+		fmt.Printf("this is run func\n")
+		return nil
+	})
+	ctl.RegFlagSet(&pflag.FlagSet{})
+	ctl.Flags()
+	if ctl.GetCmd().Use != CtlUse {
+		t.Errorf("want get cmd use %v get %v", CtlUse, ctl.GetCmd().Use)
+		return
+	}
+	if ctl.GetShutdownFunc() == nil {
+		t.Errorf("want GetShutdownFunc not get nil")
+		return
+	}
+	err = ctl.cmd.RunE(nil, nil)
+	if err != nil {
+		t.Errorf("want error nil get err %v", err)
+	}
 }
