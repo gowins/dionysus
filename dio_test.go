@@ -2,6 +2,7 @@ package dionysus
 
 import (
 	"fmt"
+	"github.com/gowins/dionysus/cmd"
 	"io"
 	"os"
 	"syscall"
@@ -299,4 +300,11 @@ func TestDio_DioStartRun(t *testing.T) {
 	time.Sleep(10 * time.Second)
 	fn := tc.GetShutdownFunc()
 	fn()
+}
+
+func TestAddHealthCmd(t *testing.T) {
+	d := NewDio()
+	d.addHealthCmd(cmd.GrpcUse)
+	d.addHealthCmd(cmd.GinUse)
+	d.addHealthCmd(cmd.CtlUse)
 }

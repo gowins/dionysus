@@ -4,10 +4,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/gowins/dionysus/healthy"
+	"github.com/gowins/dionysus/step"
 	"time"
 
 	"github.com/gowins/dionysus/log"
-	"github.com/gowins/dionysus/step"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -17,6 +18,7 @@ import (
 
 type testCmd struct {
 	cmd      *cobra.Command
+	health   *healthy.Health
 	stopChan chan struct{}
 }
 
@@ -41,10 +43,15 @@ func (tc *testCmd) Flags() *pflag.FlagSet {
 func main() {
 	//register cmd
 	tc := &testCmd{
-		cmd:      &cobra.Command{Use: "testCmd", Short: "just for test"},
+		cmd:      &cobra.Command{Use: "ctl", Short: "just for test"},
+		health:   healthy.New(),
 		stopChan: make(chan struct{}),
 	}
 	tc.cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if err := tc.health.FileObserve(healthy.CheckInterval); err != nil {
+			log.Errorf("health check error %v\n", err)
+			return err
+		}
 		timer1 := time.NewTicker(5 * time.Second)
 		for {
 			select {

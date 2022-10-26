@@ -3,75 +3,31 @@ package cmd
 import (
 	"context"
 	"errors"
-	"fmt"
-
-	"github.com/gowins/dionysus/shutdown"
+	"github.com/gowins/dionysus/healthy"
+	"github.com/gowins/dionysus/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-// The lifecycle of ctlcmd and four user functions: preFunc runFunc shutdownFunc and postFunc
-//
-// prerun stage                     run stage                       post run stage
-// +-----------------+              +-------------------+        +--------------------------------------------------+
-// |                 |              |                   |        |                                                  |
-// | +-------------+ |              |  +--------------+ |        |  +-----------------+                             |
-// | | parse flag  | |              |  |              +------------>+ stuck at select +-----------------+           |
-// | +-----+-------+ |              |  |              | |        |  +--------+--------+                 |           |
-// |       |         |       +-------->+ go (runFunc) | |        |           +                          +           |
-// |       |         |       |      |  |              | |        |        os.Signal                user finish      |
-// |  flags|in ctx   |       |      |  |              | |        |           +                          |           |
-// |       |         |       |      |  +--------------+ |        |           |                          |           |
-// |       |         |       |      |                   |        |           v                          v           |
-// |       v         |       |      |                   |        |  +--------+--------+  succeed  +-----+--------+  |
-// | +-----+-------+ |       |      |                   |        |  |  shutdownFunc   +---------->+  postFunc    |  |
-// | |  preFunc    | |       |      |                   |        |  +--------+--------+           +-----+--------+  |
-// | +-----+-------+ |       |      |                   |        |           |                          |           |
-// |       |         |       |      |                   |        |           |                          |code=0     |
-// |       v         |       |      |                   |        |           |                          v           |
-// | +-----+-------+ |       |      |                   |        |           |  timeout    +-----+--------+  |
-// | | go (healthy)+---------+      |                   |        |           +------------------->+ os.Exit(code)|  |
-// | +-------------+ |              |                   |        |                                +--------------+  |
-// |                 |              |                   |        |                                                  |
-// +-----------------+              +-------------------+        +--------------------------------------------------+
-
-// CtxKey fix golint stage goanalysis_metalinter error
-// SA1029: should not use built-in type string as key for value; define your own type to avoid collisio
-type CtxKey string
-
-// var runFunc, shutdownFunc = func(ctx context.Context) {}, func(ctx context.Context) {}
-// var userFlagSet = &pflag.FlagSet{}
+const CtlUse = "ctl"
 
 type ctl struct {
-	cmd *cobra.Command
-
-	runFunc, shutdownFunc func(ctx context.Context)
-	preFunc, postFunc     []func() error
+	cmd          *cobra.Command
+	Ctx          context.Context
+	health       *healthy.Health
+	runFunc      func() error
+	shutdownFunc func()
 }
 
 func NewCtlCommand() *ctl {
 	return &ctl{
-		cmd: &cobra.Command{Use: "ctl", Short: "Run as ctl mod"},
+		cmd:    &cobra.Command{Use: CtlUse, Short: "Run as ctl mod"},
+		health: healthy.New(),
+		Ctx:    context.TODO(),
 	}
 }
 
-func (c *ctl) RegPreRunFunc(value string, f func() error) error {
-	if f == nil {
-		return errors.New("Registering nil func ")
-	}
-	c.preFunc = append(c.preFunc, f)
-	return nil
-}
-
-func (c *ctl) RegRunFunc(f func(ctx context.Context)) error {
-	if f == nil {
-		return errors.New("Registering nil func ")
-	}
-	c.runFunc = f
-	return nil
-}
-
-func (c *ctl) RegShutdownFunc(f func(ctx context.Context)) error {
+func (c *ctl) RegShutdownFunc(f func()) error {
 	if f == nil {
 		return errors.New("Registering nil func ")
 	}
@@ -79,11 +35,18 @@ func (c *ctl) RegShutdownFunc(f func(ctx context.Context)) error {
 	return nil
 }
 
-func (c *ctl) RegPostRunFunc(value string, f func() error) error {
+func (c *ctl) RegRunFunc(f func() error) error {
 	if f == nil {
 		return errors.New("Registering nil func ")
 	}
-	c.postFunc = append(c.postFunc, f)
+	c.runFunc = func() error {
+		//run health
+		if err := c.health.FileObserve(healthy.CheckInterval); err != nil {
+			log.Errorf("health check error %v\n", err)
+			return err
+		}
+		return f()
+	}
 	return nil
 }
 
@@ -96,56 +59,12 @@ func (c *ctl) Flags() *pflag.FlagSet {
 }
 
 func (c *ctl) GetCmd() *cobra.Command {
-	valCtx := context.TODO()
-	finishChan := make(chan struct{})
-
-	c.cmd.PreRunE = func(cmd *cobra.Command, args []string) (err error) {
-		defer func() {
-			if r := recover(); r != nil {
-				err = fmt.Errorf("Recovered from prerun. Err:%v ", r)
-			}
-		}()
-
-		cmd.Flags().VisitAll(func(f *pflag.Flag) {
-			valCtx = context.WithValue(valCtx, CtxKey(f.Name), f.Value.String())
-		})
-
-		if len(c.preFunc) > 0 {
-			for _, f := range c.preFunc {
-				if err = f(); err != nil {
-					return err
-				}
-			}
-		}
-
-		return nil
+	c.cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		return c.runFunc()
 	}
-
-	c.cmd.Run = func(cmd *cobra.Command, args []string) {
-		shutdown.NotifyAfterFinish(finishChan, func() {
-			c.runFunc(valCtx)
-		})
-
-	}
-
-	c.cmd.PostRunE = func(cmd *cobra.Command, args []string) error {
-		shutdown.WaitingForNotifies(finishChan, func() {
-			c.shutdownFunc(valCtx)
-		})
-
-		if len(c.postFunc) > 0 {
-			for _, f := range c.postFunc {
-				if err := f(); err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	}
-
 	return c.cmd
 }
 
 func (c *ctl) GetShutdownFunc() func() {
-	return func() {}
+	return c.shutdownFunc
 }

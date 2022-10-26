@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option go_package="./;healthy";
+package healthy;
+
+message HealthyRequest {
+  string request = 10001;
+}
+
+message HealthyResponse {
+  string response = 10002;
+}
+
+message HealthyStatus {
+  bool status = 10006;
+}
+
+service HealthService {
+  rpc HealthLiveness (HealthyRequest) returns (HealthyResponse) {}
+  rpc HealthLivenessSet (HealthyStatus) returns (HealthyResponse) {}
+  rpc HealthReadiness (HealthyRequest) returns (HealthyResponse) {}
+  rpc HealthReadinessSet (HealthyStatus) returns (HealthyResponse) {}
+  rpc HealthStartup (HealthyRequest) returns (HealthyResponse) {}
+  rpc HealthStartupSet (HealthyStatus) returns (HealthyResponse) {}
+}
