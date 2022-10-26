@@ -1,8 +1,6 @@
 package ginx
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,7 +12,7 @@ type GinRouters interface {
 	// Use resgister middleware
 	Use(handler ...gin.HandlerFunc) GinRouters
 	// Handle use GinHandler to register route
-	Handle(method, path string, handler ...GinHandler) GinRouters
+	Handle(method, path string, handler GinHandler) GinRouters
 }
 
 type ginGroup struct {
@@ -26,21 +24,15 @@ func (r *ginGroup) Use(handler ...gin.HandlerFunc) GinRouters {
 	return &ginGroup{g: g}
 }
 
-func (r *ginGroup) Handle(method, path string, handler ...GinHandler) GinRouters {
-	g := r.g.Handle(method, path, buildGinHandler(handler...)...)
+func (r *ginGroup) Handle(method, path string, handler GinHandler) GinRouters {
+	g := r.g.Handle(method, path, buildGinHandler(handler))
 	return &ginGroup{g: g}
 }
 
-func buildGinHandler(handler ...GinHandler) []gin.HandlerFunc {
-	gh := make([]gin.HandlerFunc, len(handler))
-
-	for k, v := range handler {
-		gh[k] = func(c *gin.Context) {
-			if r := v(c); r != nil {
-				c.Render(http.StatusOK, r)
-			}
+func buildGinHandler(handler GinHandler) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if r := handler(c); r != nil {
+			c.Render(c.Writer.Status(), r)
 		}
 	}
-
-	return gh
 }
