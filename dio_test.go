@@ -2,12 +2,13 @@ package dionysus
 
 import (
 	"fmt"
-	"github.com/gowins/dionysus/cmd"
 	"io"
 	"os"
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/gowins/dionysus/cmd"
 
 	"github.com/gowins/dionysus/log"
 	"github.com/gowins/dionysus/step"
@@ -104,6 +105,7 @@ func TestWaitingForNotifies(t *testing.T) {
 	})
 }
 
+//go:norace
 func TestDio_DioStart(t *testing.T) {
 	tc := &testCmd{
 		cmd:      &cobra.Command{Use: "testCmd", Short: "just for test"},

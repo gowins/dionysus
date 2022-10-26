@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gowins/dionysus"
 	"github.com/gowins/dionysus/cmd"
 	"github.com/gowins/dionysus/ginx"
-	"net/http"
-	"time"
 )
 
 func main() {

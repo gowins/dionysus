@@ -23,7 +23,7 @@ const (
 )
 
 var (
-	defaultWebServerAddr = ":8081"
+	defaultWebServerAddr = ":8080"
 	livenessStatus       = true
 	readinessStatus      = true
 	startupStatus        = true
@@ -50,7 +50,6 @@ func (t *ginCommand) GetCmd() *cobra.Command {
 		if envAddr := os.Getenv(WebServerAddr); envAddr != "" {
 			defaultWebServerAddr = envAddr
 		}
-		t.cmd.Flags().StringVarP(&t.server.Addr, addrFlagName, "a", defaultWebServerAddr, "the http server address")
 	})
 
 	t.cmd.RunE = func(cmd *cobra.Command, args []string) error {
