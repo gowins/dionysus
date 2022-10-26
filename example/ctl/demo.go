@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/gowins/dionysus/step"
 	"time"
+
+	"github.com/gowins/dionysus/step"
 
 	"github.com/gowins/dionysus"
 	"github.com/gowins/dionysus/cmd"

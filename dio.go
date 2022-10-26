@@ -28,6 +28,13 @@ func NewDio() *Dio {
 }
 
 // DioStart be care cmds should not use PersistentXXXRunX，this is use by Dio root cmd
+//
+//	lifecycle:
+//				PersistentPreRun
+//				PreRun
+//				Run
+//				PostRun
+//				PersistentPostRun
 func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 	if projectName == "" {
 		return fmt.Errorf("projectName can not be nil")
