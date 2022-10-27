@@ -2,7 +2,6 @@ package dionysus
 
 import (
 	"fmt"
-	"github.com/gowins/dionysus/cmd"
 	"io"
 	"os"
 	"syscall"
@@ -10,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gowins/dionysus/cmd"
-
 	"github.com/gowins/dionysus/log"
 	"github.com/gowins/dionysus/step"
 	"github.com/smartystreets/goconvey/convey"

@@ -87,6 +87,7 @@ func (h *healthCmd) GetCtlCheckCmd() *cobra.Command {
 	h.cmd.Run = func(cmd *cobra.Command, args []string) {
 		if err := healthy.CheckCtlHealthyStat(h.cmd.Use); err != nil {
 			log.Fatal(err)
+			os.Exit(3)
 		}
 	}
 	return h.cmd
@@ -96,6 +97,7 @@ func (h *healthCmd) GetHttpCheckCmd(url string) *cobra.Command {
 	h.cmd.Run = func(cmd *cobra.Command, args []string) {
 		if err := healthy.CheckHttpHealthyStat(url, h.cmd.Use); err != nil {
 			log.Fatal(err)
+			os.Exit(3)
 		}
 	}
 	return h.cmd
@@ -119,6 +121,7 @@ func (h *healthCmd) GetGrpcCheckCmd() *cobra.Command {
 		}
 		if err := healthy.CheckGrpcHealthy(defaultGrpcAddr, h.cmd.Use); err != nil {
 			log.Fatal(err)
+			os.Exit(3)
 		}
 	}
 	return h.cmd
