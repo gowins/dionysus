@@ -7,6 +7,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+//go:norace
 func TestSetLog(t *testing.T) {
 	Convey("Before set", t, func() {
 		So(kLogger.Logger, ShouldResemble, log)
