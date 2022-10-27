@@ -105,5 +105,10 @@ func Test_healthCmd_GetHttpCheckCmd(t *testing.T) {
 		t.Errorf("wann error nil get error %v", err)
 		return
 	}
-	cmd.Run(nil, nil)
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		return nil
+	}
+	if err := cmd.RunE(nil, nil); err != nil {
+		t.Errorf("wann error nil get error %v", err)
+	}
 }
