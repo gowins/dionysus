@@ -27,6 +27,7 @@ func main() {
 	ctx, cancel := context.WithCancel(ctlCmd.Ctx)
 	ctlCmd.Ctx = ctx
 	_ = ctlCmd.RegShutdownFunc(func() {
+		// ctl需要自己定义Shutdown的函数
 		cancel()
 	})
 	_ = ctlCmd.RegRunFunc(func() error {
