@@ -65,7 +65,7 @@ func (c *ctl) GetCmd() *cobra.Command {
 func (c *ctl) GetShutdownFunc() StopFunc {
 	return func() {
 		for _, stopSteps := range c.shutdownSteps {
-			log.Infof("run stopSteps %v", stopSteps.StepName)
+			log.Infof("run shutdown %v", stopSteps.StepName)
 			stopSteps.StopFn()
 		}
 	}

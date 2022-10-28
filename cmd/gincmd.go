@@ -156,7 +156,7 @@ func (g *ginCommand) stopServer() {
 func (g *ginCommand) GetShutdownFunc() StopFunc {
 	return func() {
 		for _, stopSteps := range g.shutdownSteps {
-			log.Infof("run stopSteps %v", stopSteps.StepName)
+			log.Infof("run shutdown %v", stopSteps.StepName)
 			stopSteps.StopFn()
 		}
 		g.stopServer()
