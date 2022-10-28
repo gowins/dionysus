@@ -61,7 +61,7 @@ shutdown只有ctl需要用户自定义，gin和grpc都是由dionysus框架定义
 
 ## 健康检查实现
 健康检查分为三种  
-1: startup, 该健康检查主要定义何时开始健康  
+1: startup, 该健康检查主要定义何时开始健康检查  
 2: liveness, 控制pod实例的存活，检查失败，则pod重启  
 3: readiness, 控制pod实例的流量导入，检查失败，pod流量不在进入  
 ![healthcheck](image/healthcheck.jpg)健康检查如上所示，框架提供了checker hook和状态开关。  
