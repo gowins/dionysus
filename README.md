@@ -14,13 +14,14 @@ dionysus是一个集成实现了gin, ctl和grpc等服务等golang项目集。
 ## dionysus执行流程说明
 ![dionysuslife](image/dionysuslife.jpg)
 dionysus执行流程如上图所示，有颜色的是用户可定义的行为，相应的颜色是对于的定义阶段和执行阶段。空白颜色的是框架定义的行为，不可更改。  
+其中只有绿色的run是用户必须定义的，其它颜色的项目用户根据需求使用。  
+但是对于ctl的话，还必须多定义shutdownFunc(grpc和gin为框架内置实现)。  
 cmd的执行顺序为```SysPreRun-->UserPreRun-->Run-->UserPostRun-->SysPostRun```
 
 
 ### 1: dionysus初始化阶段  
 
 1.1: 首先创建相应的子cmd(gin,ctl和grpc), 定义子cmd的run执行逻辑和shutdown关闭逻辑
-shutdown只有ctl需要用户自定义，gin和grpc都是由dionysus框架定义好shutdown
 
 1.2: 创建dionysus框架，注册用户侧的PreRun(在cmd的run之前执行)和PostRun(在cmd的shutdown之后执行)  
 注册用户自定义的health Checkers。
