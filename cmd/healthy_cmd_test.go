@@ -1,10 +1,18 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/gowins/dionysus/healthy"
+	"github.com/gowins/dionysus/log"
 	"github.com/spf13/cobra"
+	"os"
 	"testing"
 )
+
+var _ = func() error {
+	log.Setup(log.SetProjectName("projectName"), log.WithWriter(os.Stdout))
+	return nil
+}
 
 func TestNewHealthCmd(t *testing.T) {
 	NewHealthCmd("")
@@ -81,6 +89,16 @@ func Test_healthCmd_GetGrpcCheckCmd(t *testing.T) {
 	if err := cmd.RunE(nil, nil); err != nil {
 		t.Errorf("wann error nil get error %v", err)
 	}
+	healthy.RegLivenessCheckers(func() error {
+		return fmt.Errorf("test healthy liveness error")
+	})
+	healthy.RegLivenessCheckers(func() error {
+		return fmt.Errorf("test healthy liveness error")
+	})
+	os.Setenv(healthy.HealthStatus, healthy.StatusClose)
+	cmd.Run(nil, nil)
+	os.Setenv(healthy.HealthStatus, healthy.StatusOpen)
+	cmd.Run(nil, nil)
 }
 
 func Test_healthCmd_GetHttpCheckCmd(t *testing.T) {
@@ -105,10 +123,11 @@ func Test_healthCmd_GetHttpCheckCmd(t *testing.T) {
 		t.Errorf("wann error nil get error %v", err)
 		return
 	}
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return nil
-	}
-	if err := cmd.RunE(nil, nil); err != nil {
-		t.Errorf("wann error nil get error %v", err)
-	}
+	healthy.RegLivenessCheckers(func() error {
+		return fmt.Errorf("test healthy liveness error")
+	})
+	os.Setenv(healthy.HealthStatus, healthy.StatusClose)
+	cmd.Run(nil, nil)
+	os.Setenv(healthy.HealthStatus, healthy.StatusOpen)
+	cmd.Run(nil, nil)
 }
