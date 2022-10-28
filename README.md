@@ -14,7 +14,7 @@ dionysus是一个集成实现了gin, ctl和grpc等服务等golang项目集。
 ## dionysus执行流程说明
 ![dionysuslife](image/dionysuslife.jpg)
 dionysus执行流程如上图所示，有颜色的是用户可定义的行为，相应的颜色是对于的定义阶段和执行阶段。空白颜色的是框架定义的行为，不可更改。  
-其中只有绿色的run是用户必须定义的，其它颜色的项目用户根据需求使用。
+其中只有绿色的run是用户必须定义的，其它颜色的项目用户根据需求使用。  
 cmd的执行顺序为```SysPreRun-->UserPreRun-->Run-->UserPostRun-->SysPostRun```
 
 

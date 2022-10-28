@@ -25,11 +25,14 @@ func (tc *testCmd) GetCmd() *cobra.Command {
 	return tc.cmd
 }
 
-func (tc *testCmd) GetShutdownFunc() func() {
+func (tc *testCmd) GetShutdownFunc() cmd.StopFunc {
 	return func() {
 		fmt.Printf("this is testCmd shutdown func\n")
 		tc.stopChan <- struct{}{}
 	}
+}
+
+func (tc *testCmd) RegShutdownFunc(stopSteps ...cmd.StopStep) {
 }
 
 func (tc *testCmd) RegFlagSet(set *pflag.FlagSet) {
