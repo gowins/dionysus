@@ -26,29 +26,29 @@ func main() {
 	postSteps := []step.InstanceStep{
 		{
 			StepName: "PostPrint1", Func: func() error {
-			fmt.Println(green, "=========== post 1 =========== ", white)
-			return nil
-		},
+				fmt.Println(green, "=========== post 1 =========== ", white)
+				return nil
+			},
 		},
 		{
 			StepName: "PostPrint2", Func: func() error {
-			fmt.Println(green, "=========== post 2 =========== ", white)
-			return nil
-		},
+				fmt.Println(green, "=========== post 2 =========== ", white)
+				return nil
+			},
 		},
 	}
 	preSteps := []step.InstanceStep{
 		{
 			StepName: "PrePrint1", Func: func() error {
-			fmt.Println(green, "=========== pre 1 =========== ", white)
-			return nil
-		},
+				fmt.Println(green, "=========== pre 1 =========== ", white)
+				return nil
+			},
 		},
 		{
 			StepName: "PrePrint2", Func: func() error {
-			fmt.Println(green, "=========== pre 2 =========== ", white)
-			return nil
-		},
+				fmt.Println(green, "=========== pre 2 =========== ", white)
+				return nil
+			},
 		},
 	}
 	// PreRun exec before server start
@@ -70,10 +70,22 @@ func main() {
 
 	ctx, cancel := context.WithCancel(ctlCmd.Ctx)
 	ctlCmd.Ctx = ctx
-	_ = ctlCmd.RegShutdownFunc(func() {
-		// ctl需要自己定义Shutdown的函数
-		cancel()
-	})
+	stopSteps := []cmd.StopStep{
+		{
+			StepName: "before stop",
+			StopFn: func() {
+				fmt.Printf("this is before stop\n")
+			},
+		},
+		{
+			StepName: "stop",
+			StopFn: func() {
+				fmt.Printf("this is stop\n")
+				cancel()
+			},
+		},
+	}
+	ctlCmd.RegShutdownFunc(stopSteps...)
 
 	// PostRun exec after server stop
 	_ = d.PostRunStepsAppend(postSteps...)

@@ -19,6 +19,12 @@ func TestNewGinCommand(t *testing.T) {
 	gcmd.RegFlagSet(&pflag.FlagSet{})
 	gcmd.Flags()
 	gcmd.GetCmd()
+	gcmd.RegShutdownFunc(StopStep{
+		StepName: "stopgccm",
+		StopFn: func() {
+			fmt.Printf("this is stop gin")
+		},
+	})
 	gcmd.GetShutdownFunc()
 	go func() {
 		gcmd.registerHealth()

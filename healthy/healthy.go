@@ -27,6 +27,9 @@ const (
 	HealthStartup        = "startup"
 	CheckInterval        = time.Second * 5
 	CheckIntervalTimeOut = CheckInterval * 3
+	HealthStatus         = "HEALTH_STATUS"
+	StatusOpen           = "open"
+	StatusClose          = "close"
 )
 
 var (
@@ -152,6 +155,32 @@ func CheckHttpHealthyStat(url string, checkType string) error {
 	}
 	url = "http://127.0.0.1" + url
 	res, err := healthHttpClient.Get(url)
+	if err != nil || res == nil {
+		return fmt.Errorf("health check url %v, error %v", url, err)
+	}
+	if res == nil {
+		return fmt.Errorf("health check url %v res nil", url)
+	}
+	if res.StatusCode >= 400 {
+		return fmt.Errorf("health check url %v, res statusCode %v", url, res.StatusCode)
+	}
+	return nil
+}
+
+func SetHttpHealthyOpen(url string, checkType string) error {
+	return SetHttpHealthy(url, checkType, StatusOpen)
+}
+
+func SetHttpHealthyClose(url string, checkType string) error {
+	return SetHttpHealthy(url, checkType, StatusClose)
+}
+
+func SetHttpHealthy(url string, checkType string, status string) error {
+	if err := CheckerFuncRun(checkType); err != nil {
+		return err
+	}
+	url = "http://127.0.0.1" + url + "/" + status
+	res, err := healthHttpClient.Post(url, "application/json", nil)
 	if err != nil || res == nil {
 		return fmt.Errorf("health check url %v, error %v", url, err)
 	}

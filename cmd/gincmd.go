@@ -16,7 +16,6 @@ import (
 
 const (
 	WebServerAddr = "GAPI_ADDR"
-	addrFlagName  = "addr"
 	closePath     = "/close"
 	openPath      = "/open"
 	GinUse        = "gin"
@@ -31,10 +30,11 @@ var (
 
 type ginCommand struct {
 	ginx.ZeroGinRouter
-	cmd    *cobra.Command
-	server *http.Server
-	addr   string
-	once   sync.Once
+	cmd           *cobra.Command
+	server        *http.Server
+	addr          string
+	once          sync.Once
+	shutdownSteps []StopStep
 }
 
 func NewGinCommand() *ginCommand {
@@ -42,6 +42,7 @@ func NewGinCommand() *ginCommand {
 		ZeroGinRouter: ginx.NewZeroGinRouter(),
 		cmd:           &cobra.Command{Use: GinUse, Short: "Run as go-zero server"},
 		server:        &http.Server{},
+		shutdownSteps: []StopStep{},
 	}
 }
 
@@ -50,9 +51,9 @@ func (t *ginCommand) GetCmd() *cobra.Command {
 		if envAddr := os.Getenv(WebServerAddr); envAddr != "" {
 			defaultWebServerAddr = envAddr
 		}
-		t.cmd.Flags().StringVarP(&t.server.Addr, addrFlagName, "a", defaultWebServerAddr, "the http server address")
 	})
 
+	t.server.Addr = defaultWebServerAddr
 	t.cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		t.registerHealth()
 		t.startServer()
@@ -60,6 +61,10 @@ func (t *ginCommand) GetCmd() *cobra.Command {
 	}
 
 	return t.cmd
+}
+
+func (t *ginCommand) RegShutdownFunc(stopSteps ...StopStep) {
+	t.shutdownSteps = append(t.shutdownSteps, stopSteps...)
 }
 
 func (t *ginCommand) RegFlagSet(set *pflag.FlagSet) {
@@ -148,6 +153,12 @@ func (g *ginCommand) stopServer() {
 	}
 }
 
-func (g *ginCommand) GetShutdownFunc() func() {
-	return g.stopServer
+func (g *ginCommand) GetShutdownFunc() StopFunc {
+	return func() {
+		for _, stopSteps := range g.shutdownSteps {
+			log.Infof("run stopSteps %v", stopSteps.StepName)
+			stopSteps.StopFn()
+		}
+		g.stopServer()
+	}
 }

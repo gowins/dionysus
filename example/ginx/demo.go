@@ -15,6 +15,12 @@ func main() {
 	d := dionysus.NewDio()
 	//创建gin的子cmd
 	gcmd := cmd.NewGinCommand()
+	gcmd.RegShutdownFunc(cmd.StopStep{
+		StopFn: func() {
+			fmt.Printf("this gcmd stop\n")
+		},
+		StepName: "gcmdstop",
+	})
 	//定义路由/test和相应的handler函数
 	gcmd.Handle(http.MethodGet, "/test", func(c *gin.Context) ginx.Render {
 		return ginx.Success(time.Now().Unix())

@@ -14,8 +14,7 @@ dionysus是一个集成实现了gin, ctl和grpc等服务等golang项目集。
 ## dionysus执行流程说明
 ![dionysuslife](image/dionysuslife.jpg)
 dionysus执行流程如上图所示，有颜色的是用户可定义的行为，相应的颜色是对于的定义阶段和执行阶段。空白颜色的是框架定义的行为，不可更改。  
-其中只有绿色的run是用户必须定义的，其它颜色的项目用户根据需求使用。  
-但是对于ctl的话，还必须多定义shutdownFunc(grpc和gin为框架内置实现)。  
+其中只有绿色的run是用户必须定义的，其它颜色的项目用户根据需求使用。
 cmd的执行顺序为```SysPreRun-->UserPreRun-->Run-->UserPostRun-->SysPostRun```
 
 
@@ -82,7 +81,7 @@ readiness: {$binary} readiness
 在该/healthx路由组下分别注册了/startup，/liveness，/readiness三个路由。  
 健康检查会定时访问这些路由，判断服务健康状态。  
 在gin中还自定义了健康检查开关，比如通过访问/readiness/close路由  
-```curl -i podip:port/healthx/readiness/close -XPOST```控制健康检查状态开关。  
+```HEALTH_STATUS=close {$binary} readiness```控制健康检查状态开关。  
 当服务故障时，可手动实现服务流量隔离。  
 
 ### ctl health
