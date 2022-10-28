@@ -11,6 +11,8 @@ import (
 )
 
 func main() {
+	// 创建dionysus框架
+	d := dionysus.NewDio()
 	//创建gin的子cmd
 	gcmd := cmd.NewGinCommand()
 	//定义路由/test和相应的handler函数
@@ -46,8 +48,6 @@ func main() {
 		//c.JSON(http.StatusInternalServerError, "InternalServerError")
 		return ginx.Error(ginx.NewGinError(500100, "内部错误"))
 	})
-	// 创建dionysus框架
-	d := dionysus.NewDio()
 	//将子gin cmd注册到dionysus框架中，并启动程序
 	if err := d.DioStart("ginxdemo", gcmd); err != nil {
 		fmt.Printf("dio start error %v\n", err)

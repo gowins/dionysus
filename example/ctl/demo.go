@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"github.com/gowins/dionysus/step"
+	"time"
 
 	"github.com/gowins/dionysus"
 	"github.com/gowins/dionysus/cmd"
@@ -23,13 +22,39 @@ var (
 )
 
 func main() {
+	d := dionysus.NewDio()
+	postSteps := []step.InstanceStep{
+		{
+			StepName: "PostPrint1", Func: func() error {
+			fmt.Println(green, "=========== post 1 =========== ", white)
+			return nil
+		},
+		},
+		{
+			StepName: "PostPrint2", Func: func() error {
+			fmt.Println(green, "=========== post 2 =========== ", white)
+			return nil
+		},
+		},
+	}
+	preSteps := []step.InstanceStep{
+		{
+			StepName: "PrePrint1", Func: func() error {
+			fmt.Println(green, "=========== pre 1 =========== ", white)
+			return nil
+		},
+		},
+		{
+			StepName: "PrePrint2", Func: func() error {
+			fmt.Println(green, "=========== pre 2 =========== ", white)
+			return nil
+		},
+		},
+	}
+	// PreRun exec before server start
+	_ = d.PreRunStepsAppend(preSteps...)
+
 	ctlCmd := cmd.NewCtlCommand()
-	ctx, cancel := context.WithCancel(ctlCmd.Ctx)
-	ctlCmd.Ctx = ctx
-	_ = ctlCmd.RegShutdownFunc(func() {
-		// ctl需要自己定义Shutdown的函数
-		cancel()
-	})
 	_ = ctlCmd.RegRunFunc(func() error {
 		timer1 := time.NewTicker(5 * time.Second)
 		for {
@@ -43,39 +68,16 @@ func main() {
 		}
 	})
 
-	d := dionysus.NewDio()
-	postSteps := []step.InstanceStep{
-		{
-			StepName: "PostPrint1", Func: func() error {
-				fmt.Println(green, "=========== post 1 =========== ", white)
-				return nil
-			},
-		},
-		{
-			StepName: "PostPrint2", Func: func() error {
-				fmt.Println(green, "=========== post 2 =========== ", white)
-				return nil
-			},
-		},
-	}
-	preSteps := []step.InstanceStep{
-		{
-			StepName: "PrePrint1", Func: func() error {
-				fmt.Println(green, "=========== pre 1 =========== ", white)
-				return nil
-			},
-		},
-		{
-			StepName: "PrePrint2", Func: func() error {
-				fmt.Println(green, "=========== pre 2 =========== ", white)
-				return nil
-			},
-		},
-	}
+	ctx, cancel := context.WithCancel(ctlCmd.Ctx)
+	ctlCmd.Ctx = ctx
+	_ = ctlCmd.RegShutdownFunc(func() {
+		// ctl需要自己定义Shutdown的函数
+		cancel()
+	})
+
 	// PostRun exec after server stop
 	_ = d.PostRunStepsAppend(postSteps...)
-	// PreRun exec before server start
-	_ = d.PreRunStepsAppend(preSteps...)
+
 	if err := d.DioStart("ctldemo", ctlCmd); err != nil {
 		fmt.Printf("dio start error %v\n", err)
 	}

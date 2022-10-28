@@ -15,44 +15,45 @@ dionysus是一个集成实现了gin, ctl和grpc等服务等golang项目集。
 ![dionysuslife](image/dionysuslife.jpg)
 dionysus执行流程如上图所示，有颜色的是用户可定义的行为，相应的颜色是对于的定义阶段和执行阶段。空白颜色的是框架定义的行为，不可更改。
 
-> PersistentPreRun
+> SysPreRun
 > 
-> PreRun
+> UserPreRun
 > 
 > Run
 > 
-> PostRun
+> UserPostRun
 > 
-> PersistentPostRun
+> SysPostRun
 
 ### 1: dionysus初始化阶段  
 
 1.1: 首先创建相应的子cmd(gin,ctl和grpc), 定义子cmd的run执行逻辑和shutdown关闭逻辑
+shutdown只有ctl cmd需要用户自定义。gin和grpc都是由dionysus框架定义
 
-1.2: 创建dionysus框架，注册用户侧的PreRunE(在cmd的run之前执行)和PostRunE(在cmd的shutdown之后执行)  
+1.2: 创建dionysus框架，注册用户侧的PreRun(在cmd的run之前执行)和PostRun(在cmd的shutdown之后执行)  
+注册用户自定义的health Checkers。
 
-1.3: 将子cmd注册进dionysus框架中，注册dionysus的PreRunE和PostRunE函数及注册相应类型的健康检查cmd  
+1.3: 将子cmd注册进dionysus框架中，注册dionysus的PreRun和PostRun函数及注册相应类型的健康检查cmd  
 
-1.4: wrap子cmd的rune, 管理子cmd的生命周期，识别SIGINT, SIGTERM, SIGQUIT信号的处理(适配k8s的pod退出流程)  
 
 ### 2: dionysus执行流程  
 
-2.1: 执行框架注册的PreRunE函数  
+2.1: 执行框架注册的PreRun函数  
 
 2.2: 执行用户注册的PreRunE函数，（比如连接数据库等服务依赖项的初始化内容）  
 
-2.3: 执行 ___wrap runE___ , 协程执行用户的rune函数并开始相应健康检查服务  
+2.3: 执行 ___Run___ , 协程执行Run函数并开始相应健康检查服务状态  
 
-2.4: 等待 ___rune___ 执行完成或系统停止的signal  
+2.4: 等待 ___Run___ 执行完成或系统停止的signal  
 
 ### 3: dionysus停止流程  
 
-3.1: 停止流程有两种情况，一种是rune执行完毕exit了，还有一种是接收到了(SIGINT, SIGTERM, SIGQUIT)停止信号  
-如果接收到了停止信号，那么将会执行相应的shutdownFunc，如果是rune自己exit则不执行shutdownFunc  
+3.1: 停止流程有两种情况，一种是Run执行完毕exit了，还有一种是接收到了(SIGINT, SIGTERM, SIGQUIT)停止信号  
+如果接收到了停止信号，那么将会执行相应的shutdownFunc，如果是Run自己exit则不执行shutdownFunc  
 
-3.2: 执行用户注册的PostRunE函数，可以执行服务停止后等清理工作  
+3.2: 执行用户注册的PostRun函数，可以执行服务停止后等清理工作  
 
-3.3: 执行框架注册的PostRunE函数  
+3.3: 执行框架注册的PostRun函数  
 
 ----
 
