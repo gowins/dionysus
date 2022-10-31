@@ -13,9 +13,6 @@ type healthCmd struct {
 
 const (
 	HealthProjectName = "healthx"
-	HealthStatus      = "HEALTH_STATUS"
-	statusOpen        = "open"
-	statusClose       = "close"
 )
 
 func NewHealthCmd(use string) *healthCmd {
@@ -95,6 +92,20 @@ func (h *healthCmd) GetCtlCheckCmd() *cobra.Command {
 
 func (h *healthCmd) GetHttpCheckCmd(url string) *cobra.Command {
 	h.cmd.Run = func(cmd *cobra.Command, args []string) {
+		if status := os.Getenv(healthy.HealthStatus); status != "" {
+			if status == healthy.StatusOpen {
+				if err := healthy.SetHttpHealthyOpen(url, h.cmd.Use); err != nil {
+					log.Fatal(err)
+				}
+				return
+			}
+			if status == healthy.StatusClose {
+				if err := healthy.SetHttpHealthyClose(url, h.cmd.Use); err != nil {
+					log.Fatal(err)
+				}
+				return
+			}
+		}
 		if err := healthy.CheckHttpHealthyStat(url, h.cmd.Use); err != nil {
 			log.Fatal(err)
 			os.Exit(3)
@@ -105,14 +116,14 @@ func (h *healthCmd) GetHttpCheckCmd(url string) *cobra.Command {
 
 func (h *healthCmd) GetGrpcCheckCmd() *cobra.Command {
 	h.cmd.Run = func(cmd *cobra.Command, args []string) {
-		if status := os.Getenv(HealthStatus); status != "" {
-			if status == statusOpen {
+		if status := os.Getenv(healthy.HealthStatus); status != "" {
+			if status == healthy.StatusOpen {
 				if err := healthy.SetGrpcHealthyOpen(defaultGrpcAddr, h.cmd.Use); err != nil {
 					log.Fatal(err)
 				}
 				return
 			}
-			if status == statusClose {
+			if status == healthy.StatusClose {
 				if err := healthy.SetGrpcHealthyClose(defaultGrpcAddr, h.cmd.Use); err != nil {
 					log.Fatal(err)
 				}

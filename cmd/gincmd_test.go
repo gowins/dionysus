@@ -19,12 +19,17 @@ func TestNewGinCommand(t *testing.T) {
 	gcmd.RegFlagSet(&pflag.FlagSet{})
 	gcmd.Flags()
 	gcmd.GetCmd()
-	gcmd.GetShutdownFunc()
+	gcmd.RegShutdownFunc(StopStep{
+		StepName: "stopgccm",
+		StopFn: func() {
+			fmt.Printf("this is stop gin")
+		},
+	})
+	stopfn := gcmd.GetShutdownFunc()
 	go func() {
 		gcmd.registerHealth()
 		gcmd.startServer()
 		time.Sleep(time.Second * 10)
-		gcmd.stopServer()
 	}()
 	time.Sleep(time.Second * 3)
 	setHttpHealthyStatOpen(healthy.HealthLiveness)
@@ -57,6 +62,8 @@ func TestNewGinCommand(t *testing.T) {
 		t.Errorf("want error not nil")
 		return
 	}
+	time.Sleep(time.Second * 8)
+	stopfn()
 }
 
 func checkHttpHealthyStat(checkType string) error {

@@ -12,27 +12,24 @@ import (
 const CtlUse = "ctl"
 
 type ctl struct {
-	cmd          *cobra.Command
-	Ctx          context.Context
-	health       *healthy.Health
-	runFunc      func() error
-	shutdownFunc func()
+	cmd           *cobra.Command
+	Ctx           context.Context
+	health        *healthy.Health
+	runFunc       func() error
+	shutdownSteps []StopStep
 }
 
 func NewCtlCommand() *ctl {
 	return &ctl{
-		cmd:    &cobra.Command{Use: CtlUse, Short: "Run as ctl mod"},
-		health: healthy.New(),
-		Ctx:    context.TODO(),
+		cmd:           &cobra.Command{Use: CtlUse, Short: "Run as ctl mod"},
+		health:        healthy.New(),
+		Ctx:           context.TODO(),
+		shutdownSteps: []StopStep{},
 	}
 }
 
-func (c *ctl) RegShutdownFunc(f func()) error {
-	if f == nil {
-		return errors.New("Registering nil func ")
-	}
-	c.shutdownFunc = f
-	return nil
+func (c *ctl) RegShutdownFunc(stopSteps ...StopStep) {
+	c.shutdownSteps = append(c.shutdownSteps, stopSteps...)
 }
 
 func (c *ctl) RegRunFunc(f func() error) error {
@@ -65,6 +62,11 @@ func (c *ctl) GetCmd() *cobra.Command {
 	return c.cmd
 }
 
-func (c *ctl) GetShutdownFunc() func() {
-	return c.shutdownFunc
+func (c *ctl) GetShutdownFunc() StopFunc {
+	return func() {
+		for _, stopSteps := range c.shutdownSteps {
+			log.Infof("run shutdown %v", stopSteps.StepName)
+			stopSteps.StopFn()
+		}
+	}
 }

@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"github.com/gowins/dionysus/step"
+	"time"
 
 	"github.com/gowins/dionysus"
 	"github.com/gowins/dionysus/cmd"
@@ -23,25 +22,6 @@ var (
 )
 
 func main() {
-	ctlCmd := cmd.NewCtlCommand()
-	ctx, cancel := context.WithCancel(ctlCmd.Ctx)
-	ctlCmd.Ctx = ctx
-	_ = ctlCmd.RegShutdownFunc(func() {
-		cancel()
-	})
-	_ = ctlCmd.RegRunFunc(func() error {
-		timer1 := time.NewTicker(5 * time.Second)
-		for {
-			select {
-			case <-timer1.C:
-				fmt.Printf("this is RunE %v\n", time.Now().String())
-			case <-ctlCmd.Ctx.Done():
-				fmt.Printf("this is stopChan %v\n", time.Now().String())
-				return nil
-			}
-		}
-	})
-
 	d := dionysus.NewDio()
 	postSteps := []step.InstanceStep{
 		{
@@ -71,10 +51,45 @@ func main() {
 			},
 		},
 	}
-	// PostRun exec after server stop
-	_ = d.PostRunStepsAppend(postSteps...)
 	// PreRun exec before server start
 	_ = d.PreRunStepsAppend(preSteps...)
+
+	ctlCmd := cmd.NewCtlCommand()
+	_ = ctlCmd.RegRunFunc(func() error {
+		timer1 := time.NewTicker(5 * time.Second)
+		for {
+			select {
+			case <-timer1.C:
+				fmt.Printf("this is RunE %v\n", time.Now().String())
+			case <-ctlCmd.Ctx.Done():
+				fmt.Printf("this is stopChan %v\n", time.Now().String())
+				return nil
+			}
+		}
+	})
+
+	ctx, cancel := context.WithCancel(ctlCmd.Ctx)
+	ctlCmd.Ctx = ctx
+	stopSteps := []cmd.StopStep{
+		{
+			StepName: "before stop",
+			StopFn: func() {
+				fmt.Printf("this is before stop\n")
+			},
+		},
+		{
+			StepName: "stop",
+			StopFn: func() {
+				fmt.Printf("this is stop\n")
+				cancel()
+			},
+		},
+	}
+	ctlCmd.RegShutdownFunc(stopSteps...)
+
+	// PostRun exec after server stop
+	_ = d.PostRunStepsAppend(postSteps...)
+
 	if err := d.DioStart("ctldemo", ctlCmd); err != nil {
 		fmt.Printf("dio start error %v\n", err)
 	}

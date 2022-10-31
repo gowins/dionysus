@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/gowins/dionysus/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -12,12 +13,14 @@ const (
 var defaultGrpcAddr = ":1234"
 
 type grpcCommand struct {
-	cmd *cobra.Command
+	cmd           *cobra.Command
+	shutdownSteps []StopStep
 }
 
 func NewGrpcCommand() *grpcCommand {
 	return &grpcCommand{
-		cmd: &cobra.Command{Use: GrpcUse, Short: "Run as grpc server"},
+		cmd:           &cobra.Command{Use: GrpcUse, Short: "Run as grpc server"},
+		shutdownSteps: []StopStep{},
 	}
 }
 
@@ -28,8 +31,17 @@ func (g *grpcCommand) GetCmd() *cobra.Command {
 	return g.cmd
 }
 
-func (g *grpcCommand) GetShutdownFunc() func() {
+func (g *grpcCommand) RegShutdownFunc(stopSteps ...StopStep) {
+	g.shutdownSteps = append(g.shutdownSteps, stopSteps...)
+}
+
+func (g *grpcCommand) GetShutdownFunc() StopFunc {
 	return func() {
+		for _, stopSteps := range g.shutdownSteps {
+			log.Infof("run shutdown %v", stopSteps.StepName)
+			stopSteps.StopFn()
+		}
+		//grpcServer.GracefulStop()
 	}
 }
 

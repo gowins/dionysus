@@ -25,11 +25,14 @@ func (tc *testCmd) GetCmd() *cobra.Command {
 	return tc.cmd
 }
 
-func (tc *testCmd) GetShutdownFunc() func() {
+func (tc *testCmd) GetShutdownFunc() cmd.StopFunc {
 	return func() {
 		fmt.Printf("this is testCmd shutdown func\n")
 		tc.stopChan <- struct{}{}
 	}
+}
+
+func (tc *testCmd) RegShutdownFunc(stopSteps ...cmd.StopStep) {
 }
 
 func (tc *testCmd) RegFlagSet(set *pflag.FlagSet) {
@@ -39,6 +42,7 @@ func (tc *testCmd) Flags() *pflag.FlagSet {
 	return nil
 }
 
+//go:norace
 func TestDioStartCmd(t *testing.T) {
 	convey.Convey("commander", t, func() {
 		tc := &testCmd{
@@ -274,6 +278,7 @@ func TestDio_DioStart(t *testing.T) {
 	}
 }
 
+//go:norace
 func TestDio_DioStartRun(t *testing.T) {
 	tc := &testCmd{
 		cmd:      &cobra.Command{Use: "testCmd", Short: "just for test"},

@@ -8,19 +8,17 @@ import (
 
 func TestNewCtlCommand(t *testing.T) {
 	ctl := NewCtlCommand()
-	err := ctl.RegShutdownFunc(nil)
-	if err == nil {
-		t.Errorf("want error not nil")
-		return
-	}
-	err = ctl.RegRunFunc(nil)
-	if err == nil {
-		t.Errorf("want error not nil")
-		return
-	}
-	_ = ctl.RegShutdownFunc(func() {
-		fmt.Printf("this is shutdown\n")
+	ctl.RegShutdownFunc(StopStep{
+		StopFn: func() {
+			fmt.Printf("this is clt shutdown")
+		},
+		StepName: "cltShutdown",
 	})
+	err := ctl.RegRunFunc(nil)
+	if err == nil {
+		t.Errorf("want error not nil")
+		return
+	}
 
 	_ = ctl.RegRunFunc(func() error {
 		fmt.Printf("this is run func\n")
