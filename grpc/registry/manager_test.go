@@ -1,6 +1,7 @@
 package registry_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,8 +45,14 @@ func TestInit(t *testing.T) {
 	assert.NotNil(t, registry.Init("///"))
 	assert.NotNil(t, registry.Init("/etcd.wpt"))
 	assert.NotNil(t, registry.Init("etcdv3://"))
-	assert.NotNil(t, registry.Init("etcdv3://123.456"))
-	// assert.Nil(t, registry.Init("etcdv3://etcd.wpt:2379"))
+	r := fmt.Sprintf("etcdv3://123.456?secure=aaaa&timeout=%d&ttl=%d", 1, 1)
+	assert.NotNil(t, registry.Init(r))
+	r = fmt.Sprintf("etcdv3://123.456?secure=%t&timeout=%d&ttl=%d", true, 1, 1)
+	assert.NotNil(t, registry.Init(r))
+	r = fmt.Sprintf("etcdv3://123.456?secure=%t&timeout=%s&ttl=%d", true, "1s", 1)
+	assert.NotNil(t, registry.Init(r))
+	r = fmt.Sprintf("etcdv3://123.456?secure=%t&timeout=%s&ttl=%s", true, "1s", "1s")
+	assert.NotNil(t, registry.Init(r))
 }
 
 func TestRegister(t *testing.T) {

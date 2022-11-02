@@ -1,13 +1,14 @@
 package grpc
 
 import (
+	"github.com/gowins/dionysus/grpc/server"
 	"google.golang.org/grpc"
 )
 
 type EndPoints []string
 type ServerOption = grpc.ServerOption
 
-// type Server = server.GrpcServer
+type Server = server.GrpcServer
 type UnaryServerInterceptor = grpc.UnaryServerInterceptor
 type StreamServerInterceptor = grpc.StreamServerInterceptor
 type EmptyServerOption = grpc.EmptyServerOption

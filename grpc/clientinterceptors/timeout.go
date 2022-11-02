@@ -26,7 +26,7 @@ const (
 // TimeoutUnary returns a new unary server interceptor for OpenTracing.
 func TimeoutUnary(t time.Duration) grpc.UnaryClientInterceptor {
 	defaultTimeOut := DefaultUnaryTimeout
-	if t <= 0 {
+	if t < DefaultUnaryTimeout {
 		defaultTimeOut = t
 	}
 
@@ -40,7 +40,7 @@ func TimeoutUnary(t time.Duration) grpc.UnaryClientInterceptor {
 // TimeoutStream returns a new streaming server interceptor for panic recovery.
 func TimeoutStream(t time.Duration) grpc.StreamClientInterceptor {
 	defaultTimeOut := DefaultStreamTimeout
-	if t <= 0 {
+	if t < DefaultStreamTimeout {
 		defaultTimeOut = t
 	}
 

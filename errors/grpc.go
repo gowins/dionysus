@@ -8,6 +8,8 @@ import (
 	"net/http"
 )
 
+var _ error = (*Error)(nil)
+
 // Error implements the error interface.
 type Error struct {
 	Id     string `json:"id"`
@@ -46,9 +48,9 @@ func Parse(err string) *Error {
 func BadRequest(id, format string, a ...interface{}) error {
 	return &Error{
 		Id:     id,
-		Code:   400,
+		Code:   http.StatusBadRequest,
 		Detail: fmt.Sprintf(format, a...),
-		Status: http.StatusText(400),
+		Status: http.StatusText(http.StatusBadRequest),
 	}
 }
 
@@ -56,9 +58,9 @@ func BadRequest(id, format string, a ...interface{}) error {
 func Unauthorized(id, format string, a ...interface{}) error {
 	return &Error{
 		Id:     id,
-		Code:   401,
+		Code:   http.StatusUnauthorized,
 		Detail: fmt.Sprintf(format, a...),
-		Status: http.StatusText(401),
+		Status: http.StatusText(http.StatusUnauthorized),
 	}
 }
 
@@ -66,9 +68,9 @@ func Unauthorized(id, format string, a ...interface{}) error {
 func Forbidden(id, format string, a ...interface{}) error {
 	return &Error{
 		Id:     id,
-		Code:   403,
+		Code:   http.StatusForbidden,
 		Detail: fmt.Sprintf(format, a...),
-		Status: http.StatusText(403),
+		Status: http.StatusText(http.StatusForbidden),
 	}
 }
 
@@ -76,9 +78,9 @@ func Forbidden(id, format string, a ...interface{}) error {
 func NotFound(id, format string, a ...interface{}) error {
 	return &Error{
 		Id:     id,
-		Code:   404,
+		Code:   http.StatusNotFound,
 		Detail: fmt.Sprintf(format, a...),
-		Status: http.StatusText(404),
+		Status: http.StatusText(http.StatusNotFound),
 	}
 }
 
@@ -86,9 +88,9 @@ func NotFound(id, format string, a ...interface{}) error {
 func MethodNotAllowed(id, format string, a ...interface{}) error {
 	return &Error{
 		Id:     id,
-		Code:   405,
+		Code:   http.StatusMethodNotAllowed,
 		Detail: fmt.Sprintf(format, a...),
-		Status: http.StatusText(405),
+		Status: http.StatusText(http.StatusMethodNotAllowed),
 	}
 }
 
@@ -96,9 +98,9 @@ func MethodNotAllowed(id, format string, a ...interface{}) error {
 func Timeout(id, format string, a ...interface{}) error {
 	return &Error{
 		Id:     id,
-		Code:   408,
+		Code:   http.StatusRequestTimeout,
 		Detail: fmt.Sprintf(format, a...),
-		Status: http.StatusText(408),
+		Status: http.StatusText(http.StatusRequestTimeout),
 	}
 }
 
@@ -106,9 +108,9 @@ func Timeout(id, format string, a ...interface{}) error {
 func Conflict(id, format string, a ...interface{}) error {
 	return &Error{
 		Id:     id,
-		Code:   409,
+		Code:   http.StatusConflict,
 		Detail: fmt.Sprintf(format, a...),
-		Status: http.StatusText(409),
+		Status: http.StatusText(http.StatusConflict),
 	}
 }
 
@@ -116,11 +118,13 @@ func Conflict(id, format string, a ...interface{}) error {
 func InternalServerError(id, format string, a ...interface{}) error {
 	return &Error{
 		Id:     id,
-		Code:   500,
+		Code:   http.StatusInternalServerError,
 		Detail: fmt.Sprintf(format, a...),
-		Status: http.StatusText(500),
+		Status: http.StatusText(http.StatusInternalServerError),
 	}
 }
+
+var _ error = (*IgnorableError)(nil)
 
 type IgnorableError struct {
 	Err       string `json:"error"`

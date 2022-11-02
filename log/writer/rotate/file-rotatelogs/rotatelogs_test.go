@@ -2,6 +2,7 @@ package rotatelogs
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -33,7 +34,7 @@ func TestNew(t *testing.T) {
 		})
 		convey.Convey("MaxAge and RotationCount is zero", func() {
 			_, err := New(
-				"/tmp/logs",
+				tmpDir("logs"),
 				WithRotationCount(0),
 				WithLinkName(""),
 				WithMaxAge(0*time.Hour),
@@ -43,7 +44,7 @@ func TestNew(t *testing.T) {
 		})
 		convey.Convey("MaxAge and RotationTime negative", func() {
 			_, err := New(
-				"/tmp/logs",
+				tmpDir("logs"),
 				WithRotationCount(10),
 				WithLinkName(""),
 				WithMaxAge(-1*time.Hour),
@@ -54,7 +55,7 @@ func TestNew(t *testing.T) {
 		convey.Convey("success", func() {
 			loc, _ := time.LoadLocation("Asia/Shanghai")
 			_, err := New(
-				"/tmp/log",
+				tmpDir("log"),
 				WithRotationCount(0),
 				WithLinkName(""),
 				WithMaxAge(time.Hour),
@@ -70,7 +71,7 @@ func TestNew(t *testing.T) {
 func TestWrite(t *testing.T) {
 	convey.Convey("test write", t, func() {
 		r, _ := New(
-			"/tmp/log.%Y%m%d%H%M",
+			tmpDir("log.%Y%m%d%H%M"),
 			WithLinkName(""),
 			WithMaxAge(time.Hour),
 			WithRotationTime(time.Hour),
@@ -79,7 +80,7 @@ func TestWrite(t *testing.T) {
 		_, err := r.Write([]byte("ffff"))
 		convey.So(err, convey.ShouldBeNil)
 		defer os.Remove(r.curFn)
-		convey.So(r.curFn, convey.ShouldEqual, "/tmp/log.202210211600")
+		convey.So(r.curFn, convey.ShouldEqual, tmpDir("log.202210211600"))
 		err = r.Close()
 		convey.So(err, convey.ShouldBeNil)
 	})
@@ -90,7 +91,7 @@ func TestGetWriter_nolock(t *testing.T) {
 	convey.Convey("test get writer", t, func() {
 		convey.Convey("get wirter error", func() {
 			r, err := New(
-				"vv/tmp/log.%Y%m%d%H%M",
+				filepath.Join("vv", tmpDir("log.%Y%m%d%H%M")),
 				WithLinkName(""),
 				WithMaxAge(time.Hour),
 				WithRotationTime(time.Hour),
@@ -102,7 +103,7 @@ func TestGetWriter_nolock(t *testing.T) {
 		})
 		convey.Convey("get wirter error maxAge", func() {
 			r, err := New(
-				"/tmp/log.%Y%m%d%H%M",
+				tmpDir("log.%Y%m%d%H%M"),
 				WithLinkName(""),
 				WithMaxAge(time.Hour),
 				WithRotationTime(time.Hour),
@@ -117,7 +118,7 @@ func TestGetWriter_nolock(t *testing.T) {
 		})
 		convey.Convey("rotate", func() {
 			r, err := New(
-				"/tmp/log.%Y%m%d%H%M",
+				tmpDir("log.%Y%m%d%H%M"),
 				WithLinkName("/tmp/testlog"),
 				WithMaxAge(time.Hour),
 				WithRotationTime(time.Hour),
@@ -136,16 +137,16 @@ func TestGetWriter_nolock(t *testing.T) {
 func TestGenFileName(t *testing.T) {
 	convey.Convey("generate filename", t, func() {
 		r, _ := New(
-			"/tmp/log.%Y%m%d%H%M",
+			tmpDir("log.%Y%m%d%H%M"),
 			WithRotationCount(0),
 			WithLinkName(""),
 			WithMaxAge(time.Hour),
 			WithRotationTime(time.Hour),
 			WithClock(clockFn(timeFix)),
 		)
-		convey.So(r.genFilename(), convey.ShouldEqual, "/tmp/log.202210211600")
+		convey.So(r.genFilename(), convey.ShouldEqual, tmpDir("log.202210211600"))
 		r.clock = clockFn(timeFixUTC)
-		convey.So(r.genFilename(), convey.ShouldEqual, "/tmp/log.202210210800")
+		convey.So(r.genFilename(), convey.ShouldEqual, tmpDir("log.202210210800"))
 	})
 }
 
@@ -158,4 +159,8 @@ func timeFix() time.Time {
 // timeFixUTC 2022-10-21 16:26:50
 func timeFixUTC() time.Time {
 	return time.Unix(1666340810, 0).In(time.UTC)
+}
+
+func tmpDir(p string) string {
+	return filepath.Join(os.TempDir(), p)
 }

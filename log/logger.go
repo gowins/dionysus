@@ -30,6 +30,8 @@ type Logger interface {
 	WithFields(fields map[string]interface{}) Logger
 
 	SetLogLevel(level Level) error
+
+	LogLevel() Level
 }
 
 func New(Type LoggerType, opts ...Option) (Logger, error) {
