@@ -46,8 +46,11 @@ func TestSetUp(t *testing.T) {
 			Port:   3306,
 			DbName: "dbname",
 		}
+		m := map[string]DbMap{
+			"default": {Dialector: d.Dialector(), Opts: nil},
+		}
 		log.Setup(log.SetProjectName("dbsetup"), log.WithWriter(io.Discard), log.WithOnFatal(&log.MockCheckWriteHook{}))
-		Setup(d.Dialector())
+		Setup(m)
 	})
 }
 
@@ -61,11 +64,46 @@ func TestSqlMock(t *testing.T) {
 		defer db.Close()
 		rows := sqlmock.NewRows([]string{"SELECT VERSION()"}).AddRow(1)
 		mock.ExpectQuery("SELECT VERSION()").WillReturnRows(rows)
+		db1, mock1, err1 := sqlmock.New()
+		convey.So(err1, convey.ShouldBeNil)
+		defer db1.Close()
+		rows1 := sqlmock.NewRows([]string{"SELECT VERSION()"}).AddRow(1)
+		mock1.ExpectQuery("SELECT VERSION()").WillReturnRows(rows1)
 		dialector := DialectorByDB(db)
+		dialector1 := DialectorByDB(db1)
 		log.Setup(log.SetProjectName("sqlmock"), log.WithWriter(io.Discard), log.WithOnFatal(&log.MockCheckWriteHook{}))
-		Setup(dialector, testFnOpts(), testGormOpts())
-		convey.So(GetDefaultDB(), convey.ShouldNotBeNil)
+		m := map[string]DbMap{
+			"default": {Dialector: dialector, Opts: []ConfigOpt{testFnOpts(), testGormOpts()}},
+		}
+		Setup(m)
+		ormDB := GetDB("default")
+		convey.So(ormDB, convey.ShouldNotBeNil)
+		_, err = ormDB.DB()
+		convey.So(err, convey.ShouldBeNil)
+		convey.So(GetDB("default"), convey.ShouldNotBeNil)
+		convey.So(GetDB(""), convey.ShouldBeNil)
+		m1 := map[string]DbMap{
+			"default": {Dialector: dialector1, Opts: []ConfigOpt{testFnOpts(), testGormOpts()}},
+		}
+		Setup(m1)
 	})
+}
+
+func TestEmptyName(t *testing.T) {
+	defer func() {
+		_ = recover()
+	}()
+	db, mock, err := sqlmock.New()
+	convey.So(err, convey.ShouldBeNil)
+	defer db.Close()
+	rows := sqlmock.NewRows([]string{"SELECT VERSION()"}).AddRow(1)
+	mock.ExpectQuery("SELECT VERSION()").WillReturnRows(rows)
+	dialector := DialectorByDB(db)
+	log.Setup(log.SetProjectName("sqlmock"), log.WithWriter(io.Discard), log.WithOnFatal(&log.MockCheckWriteHook{}))
+	m := map[string]DbMap{
+		"": {Dialector: dialector, Opts: []ConfigOpt{testFnOpts(), testGormOpts()}},
+	}
+	Setup(m)
 }
 
 func testGormOpts() ConfigOpt {
@@ -75,7 +113,6 @@ func testGormOpts() ConfigOpt {
 func testFnOpts() ConfigOpt {
 	return WithOptFns(WithMaxOpenConns(10),
 		WithMaxIdleConns(10),
-		WithConnMaxIdleTime(time.Second*5),
 		WithConnMaxLifetime(time.Second*5),
 		WithCharset("utf8mb4"),
 		WithParseTime("True"),

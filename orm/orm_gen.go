@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"gorm.io/gen"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var (
@@ -26,7 +27,7 @@ type OrmGenCmd struct {
 	DataTyMap map[string]func(string) string
 	ModelOpts []gen.ModelOpt
 	GenModels []GenModel
-	Dsn       DsnInfo
+	Dialector gorm.Dialector
 	Cfg       gen.Config
 }
 
@@ -55,7 +56,11 @@ func (og *OrmGenCmd) genGorm() error {
 	if len(og.GenModels) == 0 {
 		return fmt.Errorf("generate models is empty")
 	}
-	db, err := gorm.Open(og.Dsn.Dialector())
+	w, err := NewWriter()
+	if err != nil {
+		return err
+	}
+	db, err := gorm.Open(og.Dialector, &gorm.Config{Logger: logger.New(w, logger.Config{LogLevel: logger.Info})})
 	if err != nil {
 		return err
 	}
