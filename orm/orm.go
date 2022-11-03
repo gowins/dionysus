@@ -149,7 +149,7 @@ func WithGormOpts(opts ...gorm.Option) ConfigOpt {
 	}
 }
 
-func Setup(dialector gorm.Dialector, opts ...ConfigOpt) error {
+func Setup(dialector gorm.Dialector, opts ...ConfigOpt) {
 	var err error
 	options := &Options{
 		maxOpenConns:    defaultMaxOpenConns,
@@ -170,19 +170,16 @@ func Setup(dialector gorm.Dialector, opts ...ConfigOpt) error {
 	defaultDB, err = gorm.Open(dialector, c.gormOpts...)
 	if err != nil {
 		log.Fatalf("open gorm failed %s", err.Error())
-		return err
 	}
 
 	db, err := defaultDB.DB()
 	if err != nil {
 		log.Fatalf("get gorm db failed %s", err.Error())
-		return err
 	}
 
 	db.SetConnMaxLifetime(options.connMaxLifetime)
 	db.SetMaxIdleConns(options.maxIdleConns)
 	db.SetMaxOpenConns(options.maxOpenConns)
-	return nil
 }
 
 func GetDefaultDB() *gorm.DB {

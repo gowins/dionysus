@@ -36,6 +36,9 @@ func TestDsnInfo(t *testing.T) {
 // TestSetUp orm set up
 func TestSetUp(t *testing.T) {
 	convey.Convey("db setup", t, func() {
+		defer func() {
+			_ = recover()
+		}()
 		d := DsnInfo{
 			User:   "user",
 			Passwd: "pass",
@@ -43,24 +46,24 @@ func TestSetUp(t *testing.T) {
 			Port:   3306,
 			DbName: "dbname",
 		}
-		log.Setup(log.SetProjectName("dbsetup"), log.WithWriter(io.Discard))
-		err := Setup(d.Dialector())
-		convey.So(err, convey.ShouldNotBeNil)
-		defaultDB = nil
+		log.Setup(log.SetProjectName("dbsetup"), log.WithWriter(io.Discard), log.WithOnFatal(&log.MockCheckWriteHook{}))
+		Setup(d.Dialector())
 	})
 }
 
 func TestSqlMock(t *testing.T) {
 	convey.Convey("sql mock", t, func() {
+		defer func() {
+			_ = recover()
+		}()
 		db, mock, err := sqlmock.New()
 		convey.So(err, convey.ShouldBeNil)
 		defer db.Close()
 		rows := sqlmock.NewRows([]string{"SELECT VERSION()"}).AddRow(1)
 		mock.ExpectQuery("SELECT VERSION()").WillReturnRows(rows)
 		dialector := DialectorByDB(db)
-		log.Setup(log.SetProjectName("sqlmock"), log.WithWriter(io.Discard))
-		err = Setup(dialector, testFnOpts(), testGormOpts())
-		convey.So(err, convey.ShouldBeNil)
+		log.Setup(log.SetProjectName("sqlmock"), log.WithWriter(io.Discard), log.WithOnFatal(&log.MockCheckWriteHook{}))
+		Setup(dialector, testFnOpts(), testGormOpts())
 		convey.So(GetDefaultDB(), convey.ShouldNotBeNil)
 	})
 }

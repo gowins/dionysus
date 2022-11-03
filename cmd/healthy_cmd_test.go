@@ -2,15 +2,16 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/gowins/dionysus/healthy"
 	"github.com/gowins/dionysus/log"
 	"github.com/spf13/cobra"
-	"os"
-	"testing"
 )
 
-var _ = func() error {
-	log.Setup(log.SetProjectName("projectName"), log.WithWriter(os.Stdout))
+var f = func(p string) error {
+	log.Setup(log.SetProjectName(p), log.WithWriter(os.Stdout), log.WithOnFatal(&log.MockCheckWriteHook{}))
 	return nil
 }
 
@@ -62,12 +63,16 @@ func Test_healthCmd_GetCtlCheckCmd(t *testing.T) {
 }
 
 func Test_healthCmd_GetGrpcCheckCmd(t *testing.T) {
+	defer func() {
+		_ = recover()
+	}()
 	cmd := NewHealthCmd(healthy.HealthLiveness).GetGrpcCheckCmd()
 	err := cmd.PersistentPreRunE(nil, nil)
 	if err != nil {
 		t.Errorf("wann error nil get error %v", err)
 		return
 	}
+	f("grpc_healthcheck_cmd")
 	err = cmd.PreRunE(nil, nil)
 	if err != nil {
 		t.Errorf("wann error nil get error %v", err)
@@ -102,12 +107,16 @@ func Test_healthCmd_GetGrpcCheckCmd(t *testing.T) {
 }
 
 func Test_healthCmd_GetHttpCheckCmd(t *testing.T) {
+	defer func() {
+		_ = recover()
+	}()
 	cmd := NewHealthCmd(healthy.HealthLiveness).GetHttpCheckCmd("errurl")
 	err := cmd.PersistentPreRunE(nil, nil)
 	if err != nil {
 		t.Errorf("wann error nil get error %v", err)
 		return
 	}
+	f("http_healthcheck_cmd")
 	err = cmd.PreRunE(nil, nil)
 	if err != nil {
 		t.Errorf("wann error nil get error %v", err)

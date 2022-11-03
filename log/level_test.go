@@ -45,6 +45,7 @@ func TestLevel(t *testing.T) {
 		AddCaller(),
 		AddCallerSkip(1),
 		AddStacktrace(ErrorLevel),
+		WithOnFatal(&MockCheckWriteHook{}),
 	}
 
 	// Debug
@@ -266,6 +267,9 @@ func TestLevel(t *testing.T) {
 
 	// Fatal
 	log = captureOutput(func() {
+		defer func() {
+			_ = recover()
+		}()
 		l, err := New(ZapLogger, append(opts, WithLevelEnabler(FatalLevel), WithWriter(os.Stdout))...)
 		if err != nil {
 			t.Fatal(err)
@@ -283,9 +287,12 @@ func TestLevel(t *testing.T) {
 	assert.NotContains(t, log, "Warn")
 	assert.NotContains(t, log, "Error")
 	assert.NotContains(t, log, "Panic")
-	assert.NotContains(t, log, "Fatal")
+	assert.Contains(t, log, "Fatal")
 
 	log = captureOutput(func() {
+		defer func() {
+			_ = recover()
+		}()
 		l, err := New(ZapLogger, append(opts, WithLevelEnabler(FatalLevel), WithWriter(os.Stdout))...)
 		if err != nil {
 			t.Fatal(err)
@@ -303,9 +310,12 @@ func TestLevel(t *testing.T) {
 	assert.NotContains(t, log, "Warn:123")
 	assert.NotContains(t, log, "Error:123")
 	assert.NotContains(t, log, "Panic:123")
-	assert.NotContains(t, log, "Fatal:123")
+	assert.Contains(t, log, "Fatal:123")
 
 	log = captureOutput(func() {
+		defer func() {
+			_ = recover()
+		}()
 		l, err := New(ZapLogger, append(opts, WithLevelEnabler(ErrorLevel), WithWriter(os.Stdout))...)
 		if err != nil {
 			t.Fatal(err)
@@ -326,6 +336,9 @@ func TestLevel(t *testing.T) {
 	assert.Contains(t, log, "Fatal")
 
 	log = captureOutput(func() {
+		defer func() {
+			_ = recover()
+		}()
 		l, err := New(ZapLogger, append(opts, WithLevelEnabler(ErrorLevel), WithWriter(os.Stdout))...)
 		if err != nil {
 			t.Fatal(err)
@@ -523,6 +536,9 @@ func TestLevel(t *testing.T) {
 	assert.Contains(t, log, "Panic:123")
 
 	log = captureOutput(func() {
+		defer func() {
+			_ = recover()
+		}()
 		l, err := New(ZapLogger, append(opts, WithLevelEnabler(FatalLevel), WithWriter(io.Discard), ErrorOutput(os.Stdout))...)
 		if err != nil {
 			t.Fatal(err)
@@ -540,9 +556,12 @@ func TestLevel(t *testing.T) {
 	assert.NotContains(t, log, "Warn")
 	assert.NotContains(t, log, "Error")
 	assert.NotContains(t, log, "Panic")
-	assert.NotContains(t, log, "Fatal")
+	assert.Contains(t, log, "Fatal")
 
 	log = captureOutput(func() {
+		defer func() {
+			_ = recover()
+		}()
 		l, err := New(ZapLogger, append(opts, WithLevelEnabler(FatalLevel), WithWriter(io.Discard), ErrorOutput(os.Stdout))...)
 		if err != nil {
 			t.Fatal(err)
@@ -560,9 +579,12 @@ func TestLevel(t *testing.T) {
 	assert.NotContains(t, log, "Warn:123")
 	assert.NotContains(t, log, "Error:123")
 	assert.NotContains(t, log, "Panic:123")
-	assert.NotContains(t, log, "Fatal:123")
+	assert.Contains(t, log, "Fatal:123")
 
 	log = captureOutput(func() {
+		defer func() {
+			_ = recover()
+		}()
 		l, err := New(ZapLogger, append(opts, WithLevelEnabler(ErrorLevel), WithWriter(io.Discard), ErrorOutput(os.Stdout))...)
 		if err != nil {
 			t.Fatal(err)
@@ -583,6 +605,9 @@ func TestLevel(t *testing.T) {
 	assert.Contains(t, log, "Fatal")
 
 	log = captureOutput(func() {
+		defer func() {
+			_ = recover()
+		}()
 		l, err := New(ZapLogger, append(opts, WithLevelEnabler(ErrorLevel), WithWriter(io.Discard), ErrorOutput(os.Stdout))...)
 		if err != nil {
 			t.Fatal(err)
@@ -593,7 +618,6 @@ func TestLevel(t *testing.T) {
 		l.Warnf("Warn:%d", 123)
 		l.Errorf("Error:%d", 123)
 		l.Panicf("Panic:%d", 123)
-		l.Fatalf("Fatal:%d", 123)
 
 		l.WithField("xx", "oo").Fatalf("Hello %s", "World")
 	})
@@ -602,6 +626,5 @@ func TestLevel(t *testing.T) {
 	assert.NotContains(t, log, "Warn:123")
 	assert.Contains(t, log, "Error:123")
 	assert.Contains(t, log, "Panic:123")
-	assert.Contains(t, log, "Fatal:123")
 	assert.Contains(t, log, "xx", "oo", "Hello World")
 }

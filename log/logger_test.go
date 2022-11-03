@@ -46,6 +46,7 @@ func TestErrWriter(t *testing.T) {
 		AddCaller(),
 		AddCallerSkip(1),
 		AddStacktrace(ErrorLevel),
+		WithOnFatal(&MockCheckWriteHook{}),
 	}
 
 	log := captureOutput(func() {
@@ -84,6 +85,7 @@ func TestFields(t *testing.T) {
 		AddCaller(),
 		AddCallerSkip(1),
 		AddStacktrace(ErrorLevel),
+		WithOnFatal(&MockCheckWriteHook{}),
 	}
 
 	log := captureOutput(func() {
