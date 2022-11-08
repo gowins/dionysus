@@ -1,16 +1,16 @@
-host: 0.0.0.0
+host: "0.0.0.0"
 mysql:
-    datasource: rds5ewindevelop:5ewinrds@tcp(rds5ewindevnet.mysql.rds.aliyuncs.com)/rds5ewin?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai
-    dbname: f2ff2
+    datasource: "rds5ewindevelop:5ewinrds@tcp(rds5ewindevnet.mysql.rds.aliyuncs.com)/rds5ewin?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai"
+    dbname: "f2ff2"
     maxidleconn: 5
     maxlifetime: 7200
     maxopenconn: 100
-name: user-api
-port: 8888
+name: "user-api"
+port: "8888"
 redis:
-    addr: r-bp1y6i1udbvmzn8o8upd.redis.rds.aliyuncs.com:6379
+    addr: "r-bp1y6i1udbvmzn8o8upd.redis.rds.aliyuncs.com:6379"
     db: 24
-    password: kuh6cvk6ZMT*wmp5ufh
-    username: vwevw
+    password: "kuh6cvk6ZMT*wmp5ufh"
+    username: "vwevw"
 steam:
-    key: AA1B55ACD6572BC76E220F277FD99DF4
+    key: "AA1B55ACD6572BC76E220F277FD99DF4"
