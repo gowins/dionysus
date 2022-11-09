@@ -2,6 +2,8 @@ package ginx
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/gin-gonic/gin/render"
 )
 
@@ -16,16 +18,18 @@ var (
 )
 
 type Response struct {
-	Code int         `json:"code"`
-	Msg  string      `json:"msg"`
-	Data interface{} `json:"data"`
+	Code      int         `json:"code"`
+	Msg       string      `json:"msg"`
+	Data      interface{} `json:"data"`
+	Timestamp int64       `json:"timestamp"`
 }
 
 func ResponseData(code int, msg string, data interface{}) Render {
 	return render.JSON{Data: Response{
-		Code: code,
-		Msg:  msg,
-		Data: data,
+		Code:      code,
+		Msg:       msg,
+		Data:      data,
+		Timestamp: time.Now().Unix(),
 	}}
 }
 
