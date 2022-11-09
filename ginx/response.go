@@ -11,9 +11,9 @@ var (
 	ginxOK               = 10000
 	ginxOKMsg            = "success"
 	ginxDefaultError     = 10001
-	ginxDefaultErrorMsg  = "default gin error"
+	ginxDefaultErrorMsg  = "serverError"
 	ginxLimitingCode     = 10002
-	ginxLimitingMsg      = "too many requests"
+	ginxLimitingMsg      = "overFlow"
 	businessMinErrorCode = 100000
 )
 
