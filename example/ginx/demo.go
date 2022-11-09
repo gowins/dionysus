@@ -6,6 +6,7 @@ import (
 	"github.com/gowins/dionysus"
 	"github.com/gowins/dionysus/cmd"
 	"github.com/gowins/dionysus/ginx"
+	"log"
 	"net/http"
 	"time"
 )
@@ -15,6 +16,10 @@ func main() {
 	d := dionysus.NewDio()
 	//创建gin的子cmd
 	gcmd := cmd.NewGinCommand()
+	// code必须大于100000
+	if err := ginx.SetDefaultErrorCode(110000); err != nil {
+		log.Fatalf("set default error code failed %v", err)
+	}
 	gcmd.RegShutdownFunc(cmd.StopStep{
 		StopFn: func() {
 			fmt.Printf("this gcmd stop\n")

@@ -31,7 +31,7 @@ func TestLimiterMiddleware(t *testing.T) {
 				res := &Response{}
 				_ = json.Unmarshal(w.Body.Bytes(), res)
 				t.Logf("goroutine:%d response:%d", i, res.Code)
-				if res.Code == 0 {
+				if res.Code == ginxOK {
 					atomic.AddInt32(&success, 1)
 				}
 				wg.Done()
