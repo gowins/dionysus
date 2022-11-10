@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	ginxOK               = 10000
+	ginxOK               = 0
 	ginxOKMsg            = "success"
 	ginxDefaultError     = 10001
 	ginxDefaultErrorMsg  = "serverError"
