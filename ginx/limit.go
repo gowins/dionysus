@@ -13,8 +13,8 @@ func LimiterMiddleware(limit int) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !limiter.Allow() {
 			c.JSON(http.StatusTooManyRequests, Response{
-				Code: SpeedLimit,
-				Msg:  CodeMsgMap[SpeedLimit],
+				Code: ginxLimitingCode,
+				Msg:  ginxLimitingMsg,
 			})
 			c.Abort()
 		}

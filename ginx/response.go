@@ -1,52 +1,53 @@
 package ginx
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/gin-gonic/gin/render"
 )
 
-const (
-	OK             = 0
-	ParamError     = 100
-	DefaultError   = 400
-	SpeedLimit     = 429
-	ServerInterval = 500
-)
-
 var (
-	CodeMsgMap = map[int]string{
-		OK:             "请求成功",
-		ParamError:     "参数错误",
-		DefaultError:   "请求失败",
-		SpeedLimit:     "服务器正忙，请稍后再试",
-		ServerInterval: "服务器错误",
-	}
-)
-
-var (
-	GinErrorParams = NewGinError(ParamError, CodeMsgMap[ParamError])
+	ginxOK               = 10000
+	ginxOKMsg            = "success"
+	ginxDefaultError     = 10001
+	ginxDefaultErrorMsg  = "serverError"
+	ginxLimitingCode     = 10002
+	ginxLimitingMsg      = "overFlow"
+	businessMinErrorCode = 100000
 )
 
 type Response struct {
-	Code int         `json:"code"`
-	Msg  string      `json:"msg"`
-	Data interface{} `json:"data"`
+	Code      int         `json:"code"`
+	Msg       string      `json:"msg"`
+	Data      interface{} `json:"data"`
+	Timestamp int64       `json:"timestamp"`
 }
 
 func ResponseData(code int, msg string, data interface{}) Render {
 	return render.JSON{Data: Response{
-		Code: code,
-		Msg:  msg,
-		Data: data,
+		Code:      code,
+		Msg:       msg,
+		Data:      data,
+		Timestamp: time.Now().Unix(),
 	}}
 }
 
 func Success(data interface{}) Render {
-	return ResponseData(OK, CodeMsgMap[OK], data)
+	return ResponseData(ginxOK, ginxOKMsg, data)
 }
 
 func Error(err error) Render {
 	if ge, ok := err.(GinError); ok {
 		return ResponseData(ge.Code, ge.Error(), struct{}{})
 	}
-	return ResponseData(DefaultError, CodeMsgMap[DefaultError], struct{}{})
+	return ResponseData(ginxDefaultError, ginxDefaultErrorMsg+": "+err.Error(), struct{}{})
+}
+
+func SetDefaultErrorCode(code int) error {
+	if code < businessMinErrorCode {
+		return fmt.Errorf("business error code should >= %v", businessMinErrorCode)
+	}
+	ginxDefaultError = code
+	return nil
 }
