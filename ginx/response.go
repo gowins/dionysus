@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	ginxOK               = 10000
+	ginxOK               = 0
 	ginxOKMsg            = "success"
 	ginxDefaultError     = 10001
 	ginxDefaultErrorMsg  = "serverError"
@@ -41,7 +41,7 @@ func Error(err error) Render {
 	if ge, ok := err.(GinError); ok {
 		return ResponseData(ge.Code, ge.Error(), struct{}{})
 	}
-	return ResponseData(ginxDefaultError, ginxDefaultErrorMsg+": "+err.Error(), struct{}{})
+	return ResponseData(ginxDefaultError, ginxDefaultErrorMsg, struct{}{})
 }
 
 func SetDefaultErrorCode(code int) error {
