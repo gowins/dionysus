@@ -20,6 +20,7 @@ type Options struct {
 	CallerSkip   int
 	EncoderCfg   EncoderConfig
 	Encoder      Encoder
+	OnFatal      any
 }
 
 type Option interface {
@@ -96,5 +97,11 @@ func WithEncoderCfg(cfg EncoderConfig) Option {
 func WithEncoder(encoder Encoder) Option {
 	return optionFunc(func(opts *Options) {
 		opts.Encoder = encoder
+	})
+}
+
+func WithOnFatal(onFatal any) Option {
+	return optionFunc(func(o *Options) {
+		o.OnFatal = onFatal
 	})
 }

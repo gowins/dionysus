@@ -2,19 +2,23 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/gowins/dionysus/healthy"
-	"github.com/gowins/dionysus/log"
-	"github.com/spf13/pflag"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/gowins/dionysus/healthy"
+	"github.com/gowins/dionysus/log"
+	"github.com/spf13/pflag"
 )
 
 var healthHttpClient = http.Client{Timeout: 3 * time.Second}
 
 func TestNewGinCommand(t *testing.T) {
-	log.Setup(log.SetProjectName("projectName"), log.WithWriter(os.Stdout))
+	defer func() {
+		_ = recover()
+	}()
+	log.Setup(log.SetProjectName("gin_cmd"), log.WithWriter(os.Stdout), log.WithOnFatal(&log.MockCheckWriteHook{}))
 	gcmd := NewGinCommand()
 	gcmd.RegFlagSet(&pflag.FlagSet{})
 	gcmd.Flags()

@@ -17,6 +17,7 @@ type zapOptions struct {
 	levelEnabler zapcore.LevelEnabler
 	writer       zapcore.WriteSyncer
 	errWriter    zapcore.WriteSyncer
+	onFatal      zapcore.CheckWriteHook
 }
 
 func newZapOption() *zapOptions {
@@ -35,6 +36,19 @@ type zapOptionFunc func(*zapOptions)
 
 func (f zapOptionFunc) apply(log *zapOptions) {
 	f(log)
+}
+
+func WithZapOnFatal(onFatal zapcore.CheckWriteHook) ZapOption {
+	return zapOptionFunc(func(zo *zapOptions) {
+		if onFatal == nil {
+			return
+		}
+		if zo.zOpts == nil {
+			zo.zOpts = []zap.Option{zap.WithFatalHook(onFatal)}
+		} else {
+			zo.zOpts = append(zo.zOpts, zap.WithFatalHook(onFatal))
+		}
+	})
 }
 
 func WithZapEncoder(encoder zapcore.Encoder) ZapOption {
@@ -90,6 +104,10 @@ func withZapOptions(opts Options) (ZapOption, error) {
 
 	if opts.AddCaller {
 		zapOpts = append(zapOpts, zap.AddCaller())
+	}
+
+	if hook, ok := opts.OnFatal.(zapcore.CheckWriteHook); ok {
+		zapOpts = append(zapOpts, zap.WithFatalHook(hook))
 	}
 
 	return WithZapOptions(zapOpts), nil

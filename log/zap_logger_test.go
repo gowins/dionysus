@@ -19,6 +19,7 @@ func TestLogger(t *testing.T) {
 		WithZapLevelEnabler(DebugLevel),
 		WithZapFields([]zapcore.Field{{Key: "wang", Type: zapcore.ReflectType, Interface: "666"}}),
 		WithZapOptions([]zap.Option{zap.ErrorOutput(zapcore.AddSync(os.Stderr))}),
+		WithZapOnFatal(&MockCheckWriteHook{}),
 	}
 	zLogger := func(zOpts ...ZapOption) Logger {
 		opts := newZapOption()
@@ -34,6 +35,9 @@ func TestLogger(t *testing.T) {
 	}(opts...)
 
 	Convey("Logging priority", t, func() {
+		defer func() {
+			_ = recover()
+		}()
 		zLogger.Debug("Debug:Hello World")
 		zLogger.Debugf("Debugf:%s,Hello World \n", "wong")
 		zLogger.Trace("Trace:Hello World")

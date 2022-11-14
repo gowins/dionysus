@@ -3,10 +3,21 @@ package log
 import (
 	"fmt"
 
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+// MockCheckWriteHook should be careful for test, should be recover
+type MockCheckWriteHook struct{}
+
+func (mcw *MockCheckWriteHook) OnWrite(e *zapcore.CheckedEntry, _ []zapcore.Field) {
+	switch e.Level {
+	case zapcore.FatalLevel:
+		panic(e.Message)
+	default:
+	}
+
+}
 
 type zLogger struct {
 	L            *zap.Logger
@@ -172,10 +183,10 @@ func (zl *zLogger) Fatal(args ...interface{}) {
 		return
 	}
 	if zl.errL != nil {
-		zl.errL.Error(fmt.Sprint(args...))
+		zl.errL.Fatal(fmt.Sprint(args...))
 		return
 	}
-	zl.L.Error(fmt.Sprint(args...))
+	zl.L.Fatal(fmt.Sprint(args...))
 }
 
 func (zl *zLogger) Fatalf(format string, args ...interface{}) {
@@ -183,10 +194,10 @@ func (zl *zLogger) Fatalf(format string, args ...interface{}) {
 		return
 	}
 	if zl.errL != nil {
-		zl.errL.Error(fmt.Sprintf(format, args...))
+		zl.errL.Fatal(fmt.Sprintf(format, args...))
 		return
 	}
-	zl.L.Error(fmt.Sprintf(format, args...))
+	zl.L.Fatal(fmt.Sprintf(format, args...))
 }
 
 func (zl *zLogger) WithField(key string, value interface{}) Logger {
