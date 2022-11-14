@@ -228,6 +228,10 @@ func (zl *zLogger) SetLogLevel(lv Level) error {
 	return nil
 }
 
+func (zl *zLogger) LogLevel() Level {
+	return zl.levelEnabler
+}
+
 func (zl *zLogger) clone(fields ...zapcore.Field) *zLogger {
 	if zl.errL != nil {
 		return &zLogger{

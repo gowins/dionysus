@@ -3,6 +3,8 @@ package grpc
 import (
 	"github.com/gowins/dionysus/grpc/balancer/resolver"
 	"github.com/gowins/dionysus/grpc/client"
+	"github.com/gowins/dionysus/grpc/server"
+	"github.com/gowins/dionysus/grpc/serverinterceptors"
 	logger "github.com/gowins/dionysus/log"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 
@@ -31,10 +33,10 @@ func GetClient(service string, opts ...grpc.DialOption) (*grpc.ClientConn, error
 	return client.Get(service, opts...)
 }
 
-// func NewServer() *Server { return server.New() }
+func NewServer() *Server { return server.New() }
 
 func SetLog(log logger.Logger) {
-	// server.SetLog(log)
+	server.SetLog(log)
 	resolver.SetLog(log)
-	// serverinterceptors.SetLog(log)
+	serverinterceptors.SetLog(log)
 }

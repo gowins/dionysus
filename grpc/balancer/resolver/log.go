@@ -12,7 +12,7 @@ func initLog() logger.Logger {
 	return l.WithFields(defaultLogFields)
 }
 
-func SetLog(log logger.Logger) {
-	log = log.WithFields(defaultLogFields)
+func SetLog(l logger.Logger) {
+	log = l.WithFields(defaultLogFields)
 	log.Debug("grpcClientResolver log is set")
 }

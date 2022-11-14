@@ -5,13 +5,24 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/gowins/dionysus/grpc/registry"
+	xlog "github.com/gowins/dionysus/log"
+	"github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/serviceconfig"
 )
 
+type mockWatcher struct{}
+
+func (m *mockWatcher) Next() (*registry.Result, error) {
+	return nil, nil
+}
+func (m *mockWatcher) Stop() {}
+
 func TestBaseResolver(t *testing.T) {
 	var br baseResolver
+	br.r = &mockWatcher{}
 	br.Close()
 	br.ResolveNow(resolver.ResolveNowOptions{})
 }
@@ -55,4 +66,16 @@ func TestBuildDirectTarget(t *testing.T) {
 func TestBuildDiscovTarget(t *testing.T) {
 	target := BuildDiscovTarget([]string{"localhost:123", "localhost:456"}, "foo")
 	assert.Equal(t, "discov://localhost:123,localhost:456/foo", target)
+}
+
+func TestGetServiceUniqueId(t *testing.T) {
+	assert.Equal(t, "serviceName-1027", getServiceUniqueId("serviceName", 1027))
+}
+
+//go:norace
+func TestSetLog(t *testing.T) {
+	convey.Convey("resolver setup log", t, func() {
+		xlog.Setup(xlog.SetProjectName("test"))
+		SetLog(xlog.GetLogger())
+	})
 }

@@ -18,6 +18,11 @@ var (
 	WithFields func(fields map[string]interface{}) Logger
 )
 
+// GetLogger return defaultLogger
+func GetLogger() Logger {
+	return defaultLogger
+}
+
 func Setup(opts ...Option) {
 	os := []Option{ // 根据实际需求添加option
 		WithLevelEnabler(DebugLevel),

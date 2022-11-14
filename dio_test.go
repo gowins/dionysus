@@ -255,11 +255,7 @@ func TestDio_DioStart(t *testing.T) {
 		gotPostStrings = append(gotPostStrings, "this is userPostA2\n")
 		return nil
 	}})
-	go func() {
-		if err := d.DioStart("testcmd", tc); err != nil {
-			fmt.Printf("DioStart err is %v\n", err)
-		}
-	}()
+	go testDioStart(d, tc)
 	time.Sleep(10 * time.Second)
 	fn := tc.GetShutdownFunc()
 	fn()
@@ -298,14 +294,17 @@ func TestDio_DioStartRun(t *testing.T) {
 	}
 	d := NewDio()
 	d.cmd.SetArgs([]string{"testCmd"})
-	go func() {
-		if err := d.DioStart("testcmd", tc); err != nil {
-			fmt.Printf("DioStart err is %v\n", err)
-		}
-	}()
+	go testDioStart(d, tc)
 	time.Sleep(10 * time.Second)
 	fn := tc.GetShutdownFunc()
 	fn()
+}
+
+//go:norace
+func testDioStart(d *Dio, tc *testCmd) {
+	if err := d.DioStart("testcmd", tc); err != nil {
+		fmt.Printf("DioStart err is %v\n", err)
+	}
 }
 
 func TestAddHealthCmd(t *testing.T) {

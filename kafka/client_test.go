@@ -9,6 +9,7 @@ import (
 var testBrokerJson = "[\"addr1:9092\",\"addr2:9092\"]"
 var testBrokerArr = []string{"addr1:9092", "addr2:9092"}
 
+//go:norace
 func TestGetReader(t *testing.T) {
 	Convey("Test general reader", t, func() {
 		r, err := newReader(nil, "none", "id", 1, ReaderWithAsync())
@@ -48,6 +49,7 @@ func TestGetReader(t *testing.T) {
 	})
 }
 
+//go:norace
 func TestGetWriter(t *testing.T) {
 	Convey("Test general writer", t, func() {
 		w, err := newWriter(nil, "none", nil, WriterWithAsync())
