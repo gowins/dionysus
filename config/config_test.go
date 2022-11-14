@@ -23,7 +23,7 @@ func TestSetup(t *testing.T) {
 			Key: "Mysql.DbName",
 			Func: func(valueString string) error {
 				getRes = append(getRes, valueString)
-				panic("test panicfewfwefwefewf")
+				panic("test panic")
 				return nil
 			},
 		},
