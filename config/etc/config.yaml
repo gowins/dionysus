@@ -1,0 +1,16 @@
+host: "0.0.0.0"
+mysql:
+    datasource: "mysqladdr"
+    dbname: "f2ff2"
+    maxidleconn: 5
+    maxlifetime: 7200
+    maxopenconn: 100
+name: "user-api"
+port: "8888"
+redis:
+    addr: "redisaddr"
+    db: 24
+    password: "1234556"
+    username: "vwevw"
+steam:
+    key: "AA1B55ACD6572BC76E220F277FD99DF4"
