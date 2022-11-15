@@ -92,9 +92,9 @@ import (
 
 func main() {
 	dsn := orm.DsnInfo{
-		User:   "rds5ewindevelop",
-		Passwd: "5ewinrds",
-		Host:   "rds5ewindevnet.mysql.rds.aliyuncs.com",
+		User:   "user",
+		Passwd: "passwd",
+		Host:   "127.0.0.1",
 		Port:   3306,
 		DbName: "rds5ewin",
 		Params: map[string][]string{
