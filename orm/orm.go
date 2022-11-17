@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	dbs                 = make(map[string]*gorm.DB)
+	dbs                 sync.Map
 	defaultMaxLifetime  = 7200 * time.Second // 单位  time.Second
 	defaultMaxOpenConns = 1000               // 设置数据库连接池最大连接数
 	defaultMaxIdleConns = 100                // 连接池最大允许的空闲连接数，如果空闲的连接数大于100，超过的连接会被连接池关闭
@@ -145,12 +145,10 @@ func Setup(dbMaps map[string]DbMap) {
 		if name == "" || ormDB == nil {
 			log.Fatalf("init gorm.DB failure: %v", name)
 		}
-		rw.Lock()
-		defer rw.Unlock()
-		if _, ok := dbs[name]; ok {
+		if _, ok := dbs.Load(name); ok {
 			log.Fatalf("repeat database: %v", name)
 		}
-		dbs[name] = ormDB
+		dbs.Store(name, ormDB)
 	}
 }
 
@@ -188,7 +186,9 @@ func getDB(dialector gorm.Dialector, opts ...ConfigOpt) *gorm.DB {
 }
 
 func GetDB(name string) *gorm.DB {
-	rw.RLock()
-	defer rw.RUnlock()
-	return dbs[name]
+	if db, ok := dbs.Load(name); ok {
+		return db.(*gorm.DB)
+	}
+	log.Errorf("orm dbs.Load(%s) failure", name)
+	return nil
 }
