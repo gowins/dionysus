@@ -5,7 +5,9 @@ go 1.19
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
+	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/apache/rocketmq-client-go/v2 v2.1.1
+	github.com/cespare/xxhash/v2 v2.1.2
 	github.com/douyu/jupiter v0.7.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gin-contrib/timeout v0.0.3
@@ -39,7 +41,6 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
