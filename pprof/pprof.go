@@ -16,6 +16,7 @@ var pprofAddr = ":9092"
 func Setup() {
 	go func() {
 		pprofSignal := make(chan os.Signal, 1)
+		// in alpine kill -12 $pid and in mac kill -31 $pid
 		signal.Notify(pprofSignal, syscall.SIGUSR2)
 		select {
 		case <-pprofSignal:
