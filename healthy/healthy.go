@@ -100,9 +100,6 @@ func (h *Health) Stat() (err error) {
 }
 
 func CheckCtlHealthyStat(healthType string) error {
-	if err := CheckerFuncRun(healthType); err != nil {
-		return err
-	}
 	f, err := os.Open(HealthyFile)
 	if err != nil {
 		return fmt.Errorf("Open file err: %w ", err)
@@ -150,9 +147,6 @@ func CheckerFuncRun(checkType string) error {
 }
 
 func CheckHttpHealthyStat(url string, checkType string) error {
-	if err := CheckerFuncRun(checkType); err != nil {
-		return err
-	}
 	url = "http://127.0.0.1" + url
 	res, err := healthHttpClient.Get(url)
 	if err != nil || res == nil {
@@ -176,9 +170,6 @@ func SetHttpHealthyClose(url string, checkType string) error {
 }
 
 func SetHttpHealthy(url string, checkType string, status string) error {
-	if err := CheckerFuncRun(checkType); err != nil {
-		return err
-	}
 	url = "http://127.0.0.1" + url + "/" + status
 	res, err := healthHttpClient.Post(url, "application/json", nil)
 	if err != nil || res == nil {
