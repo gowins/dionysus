@@ -2,6 +2,7 @@ package dionysus
 
 import (
 	"fmt"
+	"github.com/gowins/dionysus/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -58,6 +59,7 @@ func (d *Dio) DioStart(projectName string, cmds ...cmd.Commander) error {
 			}})
 		d.persistentPreRunE.RegSysFourthSteps(step.InstanceStep{
 			StepName: "metric", Func: func() error {
+				pprof.Setup()
 				return nil
 			}})
 		return d.persistentPreRunE.Run()
