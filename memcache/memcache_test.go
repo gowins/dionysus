@@ -17,25 +17,31 @@ func TestBigCache(t *testing.T) {
 	convey.Convey("big cache", t, func() {
 		convey.Convey("new bigcache error", func() {
 			opts := []ConfigOpt{WithShards(10)}
-			_, err := NewBigCache(context.Background(), opts...)
+			err := NewBigCache(context.Background(), "testCache1", opts...)
 			convey.So(err, convey.ShouldNotBeNil)
 		})
 		convey.Convey("new bigcache", func() {
-			c, err := newBigCache()
+			err := newBigCache()
 			convey.So(err, convey.ShouldBeNil)
-			err = c.Set("h3", []byte("2"))
+			err = Set("testCache2", "h3", []byte("2"))
 			convey.So(err, convey.ShouldBeNil)
-			b, err := c.Get("h3")
+			b, err := Get("testCache2", "h3")
 			convey.So(err, convey.ShouldBeNil)
 			convey.So(string(b), convey.ShouldEqual, "2")
 
-			err = c.Close()
+			err = Delete("testCache2", "h3")
+			convey.So(err, convey.ShouldBeNil)
+			_, err = Get("testCache2", "h3")
+			convey.So(err, convey.ShouldNotBeNil)
+			_, ok := GetCache("testCache2")
+			convey.So(ok, convey.ShouldBeTrue)
+			err = Close("testCache2")
 			convey.So(err, convey.ShouldBeNil)
 		})
 	})
 }
 
-func newBigCache() (*bigCache, error) {
+func newBigCache() error {
 	opts := []ConfigOpt{
 		WithShards(1024),
 		WithLifeWindow(10 * time.Second),
@@ -51,5 +57,5 @@ func newBigCache() (*bigCache, error) {
 		WithLogger(&testLogger{}),
 		WithHasher(&hasher{}),
 	}
-	return NewBigCache(context.Background(), opts...)
+	return NewBigCache(context.Background(), "testCache2", opts...)
 }

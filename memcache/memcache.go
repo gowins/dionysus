@@ -3,6 +3,7 @@ package memcache
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/allegro/bigcache/v3"
@@ -22,12 +23,17 @@ var (
 	defaultCleanWindow = 10 * time.Minute
 )
 
-type bigCache struct {
-	cache *bigcache.BigCache
+type cacheStore struct {
+	cache map[string]*bigcache.BigCache
+	sync.RWMutex
+}
+
+var store = cacheStore{
+	cache: map[string]*bigcache.BigCache{},
 }
 
 // NewBigCache return Cacher implementation
-func NewBigCache(ctx context.Context, opts ...ConfigOpt) (*bigCache, error) {
+func NewBigCache(ctx context.Context, name string, opts ...ConfigOpt) error {
 	cfg := bigcache.DefaultConfig(defaultLifeWindow)
 	cfg.HardMaxCacheSize = defaultHardMaxCacheSize
 	cfg.CleanWindow = defaultCleanWindow
@@ -36,35 +42,45 @@ func NewBigCache(ctx context.Context, opts ...ConfigOpt) (*bigCache, error) {
 	}
 	c, err := bigcache.New(ctx, cfg)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &bigCache{cache: c}, nil
+	store.Lock()
+	store.cache[name] = c
+	store.Unlock()
+	return nil
 }
 
 // Close close bigCache
-func (c *bigCache) Close() error {
-	return c.cache.Close()
+func Close(name string) error {
+	store.RLock()
+	defer store.RUnlock()
+	return store.cache[name].Close()
 }
 
 // Delete delete cache for the specific key
-func (c *bigCache) Delete(key string) error {
-	return c.cache.Delete(key)
+func Delete(name string, key string) error {
+	store.RLock()
+	defer store.RUnlock()
+	return store.cache[name].Delete(key)
 }
 
 // Get get cache for the specific key, without time to live
-func (c *bigCache) Get(key string) ([]byte, error) {
-	return c.cache.Get(key)
+func Get(name string, key string) ([]byte, error) {
+	store.RLock()
+	defer store.RUnlock()
+	return store.cache[name].Get(key)
 }
 
 // Set set key without time to live
-func (c *bigCache) Set(key string, value []byte) error {
-	return c.cache.Set(key, value)
+func Set(name string, key string, value []byte) error {
+	store.RLock()
+	defer store.RUnlock()
+	return store.cache[name].Set(key, value)
 }
 
-func (c *bigCache) Len() int {
-	return c.cache.Len()
-}
-
-func (c *bigCache) Capacity() int {
-	return c.cache.Capacity()
+func GetCache(name string) (*bigcache.BigCache, bool) {
+	store.RLock()
+	defer store.RUnlock()
+	storeCache, ok := store.cache[name]
+	return storeCache, ok
 }

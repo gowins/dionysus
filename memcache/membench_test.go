@@ -1,16 +1,17 @@
 package memcache
 
-/*  benchmark test 1000万数据下，100并发写，100并发读，平均延时1微秒延时，最高延时30微妙
+/*
+var cacheName = "benchCache"
+
+// benchmark test 1000万数据下，100并发写，100并发读，平均延时1微秒延时，最高延时30微妙, 50秒有效期，1分钟清理窗口
 func TestNewBigCache(t *testing.T) {
-	memCache, err := NewBigCache(context.Background())
+	err := NewBigCache(context.Background(), cacheName, WithCleanWindow(time.Minute), WithLifeWindow(50*time.Second))
 	if err != nil {
 		fmt.Printf("new memory cache error %v\n", err)
 	}
-	fmt.Printf("before cap %v, len %v\n", memCache.Capacity(), memCache.Len())
-	runMemSet(10000*1000, 100, memCache)
-	fmt.Printf("after cap %v, len %v\n", memCache.Capacity(), memCache.Len())
+	runMemSet(10000*1000, 100)
 	startTime := time.Now()
-	data, err := memCache.Get("key9999999")
+	data, err := Get(cacheName, "key9999999")
 	fmt.Printf("spend time %v\n", time.Now().UnixMicro()-startTime.UnixMicro())
 	if err != nil {
 		fmt.Printf("memory cache Get error %v\n", err)
@@ -18,12 +19,12 @@ func TestNewBigCache(t *testing.T) {
 	}
 	fmt.Printf("data is %v\n", string(data))
 
-	go runMemSetBig(10000*1000, 100, memCache)
-	go runMemGet(10000*1000, 100, memCache)
+	go runMemSetBig(10000*1000, 100)
+	go runMemGet(10000*1000, 100)
 	select {}
 }
 
-func runMemSet(dataTotal int, job int, memCache *bigCache) {
+func runMemSet(dataTotal int, job int) {
 	var wg sync.WaitGroup
 	wg.Add(job)
 	page := dataTotal / job
@@ -32,9 +33,9 @@ func runMemSet(dataTotal int, job int, memCache *bigCache) {
 		end := page*i + page
 		go func() {
 			for j := start; j < end; j++ {
-				err := memCache.Set(fmt.Sprintf("key%v", j), []byte(fmt.Sprintf("value%v", j)))
+				err := Set(cacheName, fmt.Sprintf("key%v", j), []byte(fmt.Sprintf("value%v", j)))
 				if err != nil {
-					fmt.Printf("memCache set error")
+					fmt.Printf("memCache set error %v\n", err)
 				}
 			}
 			wg.Done()
@@ -43,7 +44,7 @@ func runMemSet(dataTotal int, job int, memCache *bigCache) {
 	wg.Wait()
 }
 
-func runMemGet(dataTotal int, job int, memCache *bigCache) {
+func runMemGet(dataTotal int, job int) {
 	var wg sync.WaitGroup
 	wg.Add(job)
 	page := dataTotal / job
@@ -53,11 +54,8 @@ func runMemGet(dataTotal int, job int, memCache *bigCache) {
 		go func() {
 			for j := start; j < end; j++ {
 				startTime := time.Now()
-				_, err := memCache.Get(fmt.Sprintf("key%v", j))
-				if err != nil {
-					fmt.Printf("memCache get error")
-				}
-				fmt.Printf("read spend time %v\n", time.Now().UnixMicro()-startTime.UnixMicro())
+				_, err := Get(cacheName, fmt.Sprintf("key%v", j))
+				fmt.Printf("read spend time %v error %v\n", time.Now().UnixMicro()-startTime.UnixMicro(), err)
 			}
 			wg.Done()
 		}()
@@ -65,7 +63,7 @@ func runMemGet(dataTotal int, job int, memCache *bigCache) {
 	wg.Wait()
 }
 
-func runMemSetBig(dataTotal int, job int, memCache *bigCache) {
+func runMemSetBig(dataTotal int, job int) {
 	var wg sync.WaitGroup
 	wg.Add(job)
 	page := dataTotal / job
@@ -75,11 +73,8 @@ func runMemSetBig(dataTotal int, job int, memCache *bigCache) {
 		go func() {
 			for j := start; j < end; j++ {
 				startTime := time.Now()
-				err := memCache.Set(fmt.Sprintf("key%v", j), []byte(fmt.Sprintf("value%v", j)))
-				if err != nil {
-					fmt.Printf("memCache set error")
-				}
-				fmt.Printf("write spend time %v\n", time.Now().UnixMicro()-startTime.UnixMicro())
+				err := Set(cacheName, fmt.Sprintf("key%v", j), []byte(fmt.Sprintf("value%v", j)))
+				fmt.Printf("write spend time %v, error %v\n", time.Now().UnixMicro()-startTime.UnixMicro(), err)
 			}
 			wg.Done()
 		}()
