@@ -3,30 +3,24 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/gowins/dionysus/memcache"
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	// exit bigcache time.Ticker goroutine
-	defer cancel()
-	c, err := memcache.NewBigCache(ctx, memcache.WithCleanWindow(1*time.Second))
+	cacheName := "cacheDemo"
+	err := memcache.NewBigCache(context.Background(), cacheName, memcache.WithCleanWindow(time.Minute), memcache.WithLifeWindow(50*time.Second))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("new memory cache error %v\n", err)
 	}
-	err = c.SetTTL("h1", []byte("t"), time.Millisecond*500)
+	memcache.Set(cacheName, "key9999999", []byte("key9999999"))
+	startTime := time.Now()
+	data, err := memcache.Get(cacheName, "key9999999")
+	fmt.Printf("spend time %v\n", time.Now().UnixMicro()-startTime.UnixMicro())
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("memory cache Get error %v\n", err)
+		return
 	}
-	b, err := c.GetTTL("h1")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(string(b))
-	time.Sleep(time.Millisecond * 600)
-	_, err = c.GetTTL("h1")
-	fmt.Println(err == memcache.ErrEntryIsDead)
+	fmt.Printf("data is %v\n", string(data))
 }

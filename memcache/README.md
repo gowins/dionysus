@@ -88,37 +88,21 @@ type Hasher interface {
 ### 使用
 
 ```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"log"
-	"time"
-
-	"github.com/gowins/dionysus/memcache"
-)
-
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	// exit bigcache time.Ticker goroutine
-	defer cancel()
-	c, err := memcache.NewBigCache(ctx, memcache.WithCleanWindow(1*time.Second))
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = c.SetTTL("h1", []byte("t"), time.Millisecond*500)
-	if err != nil {
-		log.Fatal(err)
-	}
-	b, err := c.GetTTL("h1")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(string(b))
-	time.Sleep(time.Millisecond * 600)
-	_, err = c.GetTTL("h1")
-	fmt.Println(err == memcache.ErrEntryIsDead)
+  cacheName := "cacheDemo"
+  err := memcache.NewBigCache(context.Background(), cacheName, memcache.WithCleanWindow(time.Minute), memcache.WithLifeWindow(50*time.Second))
+  if err != nil {
+    fmt.Printf("new memory cache error %v\n", err)
+  }
+  memcache.Set(cacheName, "key9999999", []byte("key9999999"))
+  startTime := time.Now()
+  data, err := memcache.Get(cacheName, "key9999999")
+  fmt.Printf("spend time %v\n", time.Now().UnixMicro()-startTime.UnixMicro())
+  if err != nil {
+    fmt.Printf("memory cache Get error %v\n", err)
+    return
+  }
+  fmt.Printf("data is %v\n", string(data))
 }
 ```
 
@@ -127,3 +111,40 @@ func main() {
 >在使用时，注意LifeWindow与这里设置的过期时间，建议把LifeWindow设置比TTL大一些，避免被bigcache自动清理，例如1分钟
 >
 >需要调用c.Close()或者通过取消上下文，让bigcache定时器goroutine退出
+
+## Benchmarks
+1:  50秒有效期，1分钟清理窗口配置下，1000万数据下，100并发写，100并发读，平均延时1微秒延时，最高延时30微妙。  
+bench test
+```
+go test -bench=. -benchmem -benchtime=4s ./... -timeout 30m
+goos: linux
+goarch: amd64
+pkg: github.com/allegro/bigcache/v3/caches_bench
+BenchmarkMapSet-8                     	12999889	       376 ns/op	     199 B/op	       3 allocs/op
+BenchmarkConcurrentMapSet-8           	 4355726	      1275 ns/op	     337 B/op	       8 allocs/op
+BenchmarkFreeCacheSet-8               	11068976	       703 ns/op	     328 B/op	       2 allocs/op
+BenchmarkBigCacheSet-8                	10183717	       478 ns/op	     304 B/op	       2 allocs/op
+BenchmarkMapGet-8                     	16536015	       324 ns/op	      23 B/op	       1 allocs/op
+BenchmarkConcurrentMapGet-8           	13165708	       401 ns/op	      24 B/op	       2 allocs/op
+BenchmarkFreeCacheGet-8               	10137682	       690 ns/op	     136 B/op	       2 allocs/op
+BenchmarkBigCacheGet-8                	11423854	       450 ns/op	     152 B/op	       4 allocs/op
+BenchmarkBigCacheSetParallel-8        	34233472	       148 ns/op	     317 B/op	       3 allocs/op
+BenchmarkFreeCacheSetParallel-8       	34222654	       268 ns/op	     350 B/op	       3 allocs/op
+BenchmarkConcurrentMapSetParallel-8   	19635688	       240 ns/op	     200 B/op	       6 allocs/op
+BenchmarkBigCacheGetParallel-8        	60547064	        86.1 ns/op	     152 B/op	       4 allocs/op
+BenchmarkFreeCacheGetParallel-8       	50701280	       147 ns/op	     136 B/op	       3 allocs/op
+BenchmarkConcurrentMapGetParallel-8   	27353288	       175 ns/op	      24 B/op
+```
+
+2:  GC pause time
+```shell
+go version
+go version go1.19 linux/amd64
+
+go run caches_gc_overhead_comparison.go
+
+Number of entries:  10000000
+GC pause for bigcache:  0.306077ms
+Number of entries:  20000000
+GC pause for bigcache:  0.506077ms
+```
