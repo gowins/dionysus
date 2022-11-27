@@ -116,14 +116,15 @@ func main() {
 1:  50秒有效期，1分钟清理窗口配置下，1000万数据下，100并发写，100并发读，平均延时1微秒延时，最高延时30微妙。  
 bench test
 ```
-go test -bench=. -benchmem -benchtime=4s ./... -timeout 30m
-goos: linux
-goarch: amd64
-pkg: github.com/allegro/bigcache/v3/caches_bench
-BenchmarkBigCacheSet-8                	10183717	       478 ns/op	     304 B/op	       2 allocs/op
-BenchmarkBigCacheGet-8                	11423854	       450 ns/op	     152 B/op	       4 allocs/op
-BenchmarkBigCacheSetParallel-8        	34233472	       148 ns/op	     317 B/op	       3 allocs/op
-BenchmarkBigCacheGetParallel-8        	60547064	        86.1 ns/op	     152 B/op	       4 allocs/op
+goos: darwin
+goarch: arm64
+pkg: github.com/gowins/dionysus/memcache
+BenchmarkBigCacheSet-8           	17409649	       382.0 ns/op	     152 B/op	       2 allocs/op
+BenchmarkBigCacheGet-8           	16806682	       278.9 ns/op	      85 B/op	       2 allocs/op
+BenchmarkBigCacheSetParallel-8   	41394356	       134.9 ns/op	     117 B/op	       3 allocs/op
+BenchmarkBigCacheGetParallel-8   	44905400	        92.14 ns/op	      23 B/op	       1 allocs/op
+PASS
+ok  	github.com/gowins/dionysus/memcache	49.881s
 ```
 
 2:  GC pause time

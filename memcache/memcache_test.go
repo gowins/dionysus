@@ -38,6 +38,15 @@ func TestBigCache(t *testing.T) {
 			err = Close("testCache2")
 			convey.So(err, convey.ShouldBeNil)
 		})
+		convey.Convey("init bigcache", func() {
+			cacheInit := InitBigCache("cachetest1")
+			convey.So(cacheInit, convey.ShouldNotBeNil)
+			err := cacheInit.Set("h5", []byte("3"))
+			convey.So(err, convey.ShouldBeNil)
+			b, err := cacheInit.Get("h5")
+			convey.So(err, convey.ShouldBeNil)
+			convey.So(string(b), convey.ShouldEqual, "3")
+		})
 	})
 }
 
@@ -55,7 +64,7 @@ func newBigCache() error {
 		WithOnRemoveWithMetadata(func(s string, b []byte, m bigcache.Metadata) {}),
 		WithOnRemoveWithReason(func(s string, b []byte, rr bigcache.RemoveReason) {}),
 		WithLogger(&testLogger{}),
-		WithHasher(&hasher{}),
+		WithHasher(&Hasher{}),
 	}
 	return NewBigCache(context.Background(), "testCache2", opts...)
 }

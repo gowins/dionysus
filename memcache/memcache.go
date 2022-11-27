@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/allegro/bigcache/v3"
+	"github.com/gowins/dionysus/log"
 )
 
 var (
@@ -21,7 +22,8 @@ var (
 	defaultLifeWindow = 1 * time.Hour
 	// defaultCleanWindow 若此值大于0，则每隔CleanWindow时间间隔，清理一次过期缓存
 	// 若不大于0，bigcache在每次设置缓存时，会判断最早的key是否过期，过期则清理
-	defaultCleanWindow = 10 * time.Minute
+	defaultCleanWindow  = 10 * time.Minute
+	defaultMaxEntrySize = 256
 )
 
 type cacheStore struct {
@@ -100,4 +102,13 @@ func GetCache(name string) (*bigcache.BigCache, bool) {
 	bCache, ok := store.cache[name]
 	store.RUnlock()
 	return bCache, ok
+}
+
+func InitBigCache(name string, opts ...ConfigOpt) *bigcache.BigCache {
+	err := NewBigCache(context.Background(), name, opts...)
+	if err != nil {
+		log.Fatalf("init big cache error %v", err)
+	}
+	cache, _ := GetCache(name)
+	return cache
 }
