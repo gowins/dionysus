@@ -3,6 +3,7 @@ package memcache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -53,34 +54,50 @@ func NewBigCache(ctx context.Context, name string, opts ...ConfigOpt) error {
 // Close close bigCache
 func Close(name string) error {
 	store.RLock()
-	defer store.RUnlock()
-	return store.cache[name].Close()
+	bCache, ok := store.cache[name]
+	store.RUnlock()
+	if !ok {
+		return fmt.Errorf("cache %v is not found", name)
+	}
+	return bCache.Close()
 }
 
 // Delete delete cache for the specific key
 func Delete(name string, key string) error {
 	store.RLock()
-	defer store.RUnlock()
-	return store.cache[name].Delete(key)
+	bCache, ok := store.cache[name]
+	store.RUnlock()
+	if !ok {
+		return fmt.Errorf("cache %v is not found", name)
+	}
+	return bCache.Delete(key)
 }
 
 // Get get cache for the specific key, without time to live
 func Get(name string, key string) ([]byte, error) {
 	store.RLock()
-	defer store.RUnlock()
-	return store.cache[name].Get(key)
+	bCache, ok := store.cache[name]
+	store.RUnlock()
+	if !ok {
+		return nil, fmt.Errorf("cache %v is not found", name)
+	}
+	return bCache.Get(key)
 }
 
 // Set set key without time to live
 func Set(name string, key string, value []byte) error {
 	store.RLock()
-	defer store.RUnlock()
-	return store.cache[name].Set(key, value)
+	bCache, ok := store.cache[name]
+	store.RUnlock()
+	if !ok {
+		return fmt.Errorf("cache %v is not found", name)
+	}
+	return bCache.Set(key, value)
 }
 
 func GetCache(name string) (*bigcache.BigCache, bool) {
 	store.RLock()
-	defer store.RUnlock()
-	storeCache, ok := store.cache[name]
-	return storeCache, ok
+	bCache, ok := store.cache[name]
+	store.RUnlock()
+	return bCache, ok
 }

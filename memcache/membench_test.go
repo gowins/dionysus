@@ -1,84 +1,112 @@
 package memcache
 
-/*
-var cacheName = "benchCache"
+import (
+	"context"
+	"fmt"
+	"math/rand"
+	"testing"
+	"time"
+)
 
-// benchmark test 1000万数据下，100并发写，100并发读，平均延时1微秒延时，最高延时30微妙, 50秒有效期，1分钟清理窗口
-func TestNewBigCache(t *testing.T) {
-	err := NewBigCache(context.Background(), cacheName, WithCleanWindow(time.Minute), WithLifeWindow(50*time.Second))
+func key(i int) string {
+	return fmt.Sprintf("key-%010d", i)
+}
+
+func value(i int) []byte {
+	value := fmt.Sprintf("value-%010d", i)
+	return []byte(value)
+}
+
+func BenchmarkBigCacheSet(b *testing.B) {
+	cacheName := "CacheSet"
+	err := initBigCache(b.N, cacheName)
 	if err != nil {
-		fmt.Printf("new memory cache error %v\n", err)
-	}
-	runMemSet(10000*1000, 100)
-	startTime := time.Now()
-	data, err := Get(cacheName, "key9999999")
-	fmt.Printf("spend time %v\n", time.Now().UnixMicro()-startTime.UnixMicro())
-	if err != nil {
-		fmt.Printf("memory cache Get error %v\n", err)
+		b.Errorf("want new big cache error nil, get error %v", err)
 		return
 	}
-	fmt.Printf("data is %v\n", string(data))
-
-	go runMemSetBig(10000*1000, 100)
-	go runMemGet(10000*1000, 100)
-	select {}
-}
-
-func runMemSet(dataTotal int, job int) {
-	var wg sync.WaitGroup
-	wg.Add(job)
-	page := dataTotal / job
-	for i := 0; i < job; i++ {
-		start := page * i
-		end := page*i + page
-		go func() {
-			for j := start; j < end; j++ {
-				err := Set(cacheName, fmt.Sprintf("key%v", j), []byte(fmt.Sprintf("value%v", j)))
-				if err != nil {
-					fmt.Printf("memCache set error %v\n", err)
-				}
-			}
-			wg.Done()
-		}()
+	for i := 0; i < b.N; i++ {
+		err = Set(cacheName, key(i), value(i))
+		if err != nil {
+			b.Errorf("want new big cache error nil, get error %v", err)
+			return
+		}
 	}
-	wg.Wait()
 }
 
-func runMemGet(dataTotal int, job int) {
-	var wg sync.WaitGroup
-	wg.Add(job)
-	page := dataTotal / job
-	for i := 0; i < job; i++ {
-		start := page * i
-		end := page*i + page
-		go func() {
-			for j := start; j < end; j++ {
-				startTime := time.Now()
-				_, err := Get(cacheName, fmt.Sprintf("key%v", j))
-				fmt.Printf("read spend time %v error %v\n", time.Now().UnixMicro()-startTime.UnixMicro(), err)
-			}
-			wg.Done()
-		}()
+func BenchmarkBigCacheGet(b *testing.B) {
+	b.StopTimer()
+	cacheName := "CacheSet"
+	err := initBigCache(b.N, cacheName)
+	if err != nil {
+		b.Errorf("want new big cache error nil, get error %v", err)
+		return
 	}
-	wg.Wait()
+	for i := 0; i < b.N; i++ {
+		err = Set(cacheName, key(i), value(i))
+		if err != nil {
+			b.Errorf("want new big cache error nil, get error %v", err)
+			return
+		}
+	}
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		Get(cacheName, key(i))
+	}
 }
 
-func runMemSetBig(dataTotal int, job int) {
-	var wg sync.WaitGroup
-	wg.Add(job)
-	page := dataTotal / job
-	for i := 0; i < job; i++ {
-		start := page*i + 10000*1000
-		end := page*i + page + 10000*1000
-		go func() {
-			for j := start; j < end; j++ {
-				startTime := time.Now()
-				err := Set(cacheName, fmt.Sprintf("key%v", j), []byte(fmt.Sprintf("value%v", j)))
-				fmt.Printf("write spend time %v, error %v\n", time.Now().UnixMicro()-startTime.UnixMicro(), err)
-			}
-			wg.Done()
-		}()
+func BenchmarkBigCacheGetParallel(b *testing.B) {
+	cacheName := "GetParallel"
+	b.StopTimer()
+	err := initBigCache(b.N, cacheName)
+	if err != nil {
+		b.Errorf("want new big cache error nil, get error %v", err)
+		return
 	}
-	wg.Wait()
+	for i := 0; i < b.N; i++ {
+		err = Set(cacheName, key(i), value(i))
+		if err != nil {
+			b.Errorf("want new big cache error nil, get error %v", err)
+			return
+		}
+	}
+
+	b.StartTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		counter := 0
+		for pb.Next() {
+			Get(cacheName, key(counter))
+			counter = counter + 1
+		}
+	})
 }
-*/
+
+func parallelKey(threadID int, counter int) string {
+	return fmt.Sprintf("key-%04d-%06d", threadID, counter)
+}
+
+func BenchmarkBigCacheSetParallel(b *testing.B) {
+	cacheName := "SetParallel"
+	b.StopTimer()
+	err := initBigCache(b.N, cacheName)
+	if err != nil {
+		b.Errorf("want new big cache error nil, get error %v", err)
+		return
+	}
+
+	rand.Seed(time.Now().Unix())
+
+	b.RunParallel(func(pb *testing.PB) {
+		id := rand.Intn(1000)
+		counter := 0
+		for pb.Next() {
+			Set(cacheName, parallelKey(id, counter), value(id))
+			counter = counter + 1
+		}
+	})
+}
+
+func initBigCache(entriesInWindow int, cacheName string) error {
+	return NewBigCache(context.Background(), cacheName, WithCleanWindow(0), WithMaxEntriesInWindow(entriesInWindow),
+		WithLifeWindow(10*time.Minute), WithVerbose(true), WithShards(256), WithMaxEntrySize(256))
+}
