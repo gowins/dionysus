@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/gowins/dionysus/log"
 	"github.com/gowins/dionysus/step"
 	"time"
 
@@ -60,7 +61,8 @@ func main() {
 		for {
 			select {
 			case <-timer1.C:
-				fmt.Printf("this is RunE %v\n", time.Now().String())
+				log.Noticef("this is noticef")
+				log.Notice("this is notice")
 			case <-ctlCmd.Ctx.Done():
 				fmt.Printf("this is stopChan %v\n", time.Now().String())
 				return nil
