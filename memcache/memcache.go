@@ -42,8 +42,11 @@ func NewBigCache(ctx context.Context, name string, opts ...ConfigOpt) error {
 		return err
 	}
 	store.Lock()
+	defer store.Unlock()
+	if _, ok := store.cache[name]; ok {
+		return fmt.Errorf("cache name %v is already exist", name)
+	}
 	store.cache[name] = c
-	store.Unlock()
 	return nil
 }
 

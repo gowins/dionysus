@@ -2,6 +2,7 @@ package memcache
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -23,6 +24,9 @@ func TestBigCache(t *testing.T) {
 		convey.Convey("new bigcache", func() {
 			err := newBigCache()
 			convey.So(err, convey.ShouldBeNil)
+			err = newBigCache()
+			fmt.Printf("newBigCache error is %v\n", err)
+			convey.So(err, convey.ShouldNotBeNil)
 			err = Set("testCache2", "h3", []byte("2"))
 			convey.So(err, convey.ShouldBeNil)
 			b, err := Get("testCache2", "h3")
