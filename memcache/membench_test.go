@@ -73,7 +73,7 @@ func parallelKey(threadID int, counter int) string {
 }
 
 func initBigCache(entriesInWindow int, name string) *bigcache.BigCache {
-	NewBigCache(context.Background(), name, WithMaxEntriesInWindow(entriesInWindow))
+	NewBigCache(context.Background(), name, WithMaxEntriesInWindow(entriesInWindow), WithVerbose(false))
 	cache, _ := GetCache(name)
 	return cache
 }
