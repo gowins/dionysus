@@ -2,7 +2,6 @@ package memcache
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -12,18 +11,13 @@ import (
 )
 
 var (
-	ErrEntryIsDead = errors.New("entry has expired")
-)
-
-var (
 	// defaultHardMaxCacheSize 每个分片内存最大限制，单位MB，缓存大小不能超过此值
 	defaultHardMaxCacheSize = 1024
 	// defaultLifeWindow 整体缓存有效时间
 	defaultLifeWindow = 1 * time.Hour
 	// defaultCleanWindow 若此值大于0，则每隔CleanWindow时间间隔，清理一次过期缓存
 	// 若不大于0，bigcache在每次设置缓存时，会判断最早的key是否过期，过期则清理
-	defaultCleanWindow  = 10 * time.Minute
-	defaultMaxEntrySize = 256
+	defaultCleanWindow = 10 * time.Minute
 )
 
 type cacheStore struct {
