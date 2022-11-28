@@ -19,6 +19,7 @@ func TestLevel(t *testing.T) {
 		So(ErrorLevel.String(), ShouldEqual, "error")
 		So(PanicLevel.String(), ShouldEqual, "panic")
 		So(FatalLevel.String(), ShouldEqual, "fatal")
+		So(NoticeLevel.String(), ShouldEqual, "notice")
 		So(Level(10).String(), ShouldEqual, "Level(10)")
 	})
 

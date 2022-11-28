@@ -20,6 +20,8 @@ const (
 	PanicLevel
 	// FatalLevel logs a message, then calls os.Exit(1).
 	FatalLevel
+	// NoticeLevel logs a message, then make a log alert
+	NoticeLevel
 
 	TraceLevel = DebugLevel
 )
@@ -39,6 +41,8 @@ func (l Level) String() string {
 		return "panic"
 	case FatalLevel:
 		return "fatal"
+	case NoticeLevel:
+		return "notice"
 	default:
 		return fmt.Sprintf("Level(%d)", l)
 	}
@@ -64,5 +68,5 @@ type LevelEnabler interface {
 }
 
 func AllLevels() []Level {
-	return []Level{DebugLevel, TraceLevel, InfoLevel, WarnLevel, ErrorLevel, PanicLevel, FatalLevel}
+	return []Level{DebugLevel, TraceLevel, InfoLevel, WarnLevel, ErrorLevel, PanicLevel, FatalLevel, NoticeLevel}
 }
