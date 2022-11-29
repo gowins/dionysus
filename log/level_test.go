@@ -19,6 +19,7 @@ func TestLevel(t *testing.T) {
 		So(ErrorLevel.String(), ShouldEqual, "error")
 		So(PanicLevel.String(), ShouldEqual, "panic")
 		So(FatalLevel.String(), ShouldEqual, "fatal")
+		So(NoticeLevel.String(), ShouldEqual, "notice")
 		So(Level(10).String(), ShouldEqual, "Level(10)")
 	})
 
@@ -33,7 +34,7 @@ func TestLevel(t *testing.T) {
 	})
 
 	Convey("AllLevels", t, func() {
-		So(len(AllLevels()), ShouldEqual, 7)
+		So(len(AllLevels()), ShouldEqual, 8)
 	})
 
 	EncoderConfig := NewEncoderConfig()
@@ -82,10 +83,12 @@ func TestLevel(t *testing.T) {
 		l.Debug("Debug")
 		l.Trace("Trace")
 		l.Info("Info")
+		l.Notice("Notice")
 	})
 	assert.Contains(t, log, "Debug")
 	assert.Contains(t, log, "Trace")
 	assert.Contains(t, log, "Info")
+	assert.Contains(t, log, "Notice")
 
 	log = captureOutput(func() {
 		l, err := New(ZapLogger, append(opts, WithLevelEnabler(DebugLevel), WithWriter(os.Stdout))...)
@@ -303,6 +306,7 @@ func TestLevel(t *testing.T) {
 		l.Warnf("Warn:%d", 123)
 		l.Errorf("Error:%d", 123)
 		l.Panicf("Panic:%d", 123)
+		l.Noticef("Notice:%d", 123)
 		l.Fatalf("Fatal:%d", 123)
 	})
 	assert.NotContains(t, log, "Debug:123")
@@ -310,6 +314,7 @@ func TestLevel(t *testing.T) {
 	assert.NotContains(t, log, "Warn:123")
 	assert.NotContains(t, log, "Error:123")
 	assert.NotContains(t, log, "Panic:123")
+	assert.NotContains(t, log, "Notice:123")
 	assert.Contains(t, log, "Fatal:123")
 
 	log = captureOutput(func() {

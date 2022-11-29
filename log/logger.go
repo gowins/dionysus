@@ -26,6 +26,9 @@ type Logger interface {
 	Fatal(args ...interface{})
 	Fatalf(format string, args ...interface{})
 
+	Notice(args ...interface{})
+	Noticef(format string, args ...interface{})
+
 	WithField(key string, value interface{}) Logger
 	WithFields(fields map[string]interface{}) Logger
 

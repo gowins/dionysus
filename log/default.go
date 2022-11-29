@@ -7,11 +7,13 @@ var (
 	Warn          func(args ...interface{})
 	Error         func(args ...interface{})
 	Fatal         func(args ...interface{})
+	Notice        func(args ...interface{})
 	Debug         func(args ...interface{})
 	Infof         func(format string, args ...interface{})
 	Warnf         func(format string, args ...interface{})
 	Errorf        func(format string, args ...interface{})
 	Fatalf        func(format string, args ...interface{})
+	Noticef       func(format string, args ...interface{})
 	Debugf        func(format string, args ...interface{})
 
 	WithField  func(key string, value interface{}) Logger
@@ -46,6 +48,8 @@ func Setup(opts ...Option) {
 	Errorf = defaultLogger.Errorf
 	Fatal = defaultLogger.Fatal
 	Fatalf = defaultLogger.Fatalf
+	Notice = defaultLogger.Notice
+	Noticef = defaultLogger.Noticef
 	WithField = defaultLogger.WithField
 	WithFields = defaultLogger.WithFields
 
