@@ -204,14 +204,14 @@ func (zl *zLogger) Notice(args ...interface{}) {
 	if !zl.levelEnabler.Enabled(NoticeLevel) {
 		return
 	}
-	zl.L.With(zap.String("alert", "notice")).Warn(fmt.Sprint(args...))
+	zl.L.With(zap.String("alert", "notice")).Info(fmt.Sprint(args...))
 }
 
 func (zl *zLogger) Noticef(format string, args ...interface{}) {
 	if !zl.levelEnabler.Enabled(NoticeLevel) {
 		return
 	}
-	zl.L.With(zap.String("alert", "notice")).Warn(fmt.Sprintf(format, args...))
+	zl.L.With(zap.String("alert", "notice")).Info(fmt.Sprintf(format, args...))
 }
 
 func (zl *zLogger) WithField(key string, value interface{}) Logger {
