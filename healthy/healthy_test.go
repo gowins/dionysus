@@ -196,7 +196,7 @@ func TestHealth_FileObserve(t *testing.T) {
 		return nil
 	})
 	RegLivenessCheckers(func() error {
-		return nil
+		return fmt.Errorf("liveness check failed")
 	})
 	RegStartupCheckers(func() error {
 		return nil
@@ -206,8 +206,8 @@ func TestHealth_FileObserve(t *testing.T) {
 		t.Errorf("want error nil get error %v", err)
 	}
 	err = health.Stat()
-	if err != nil {
-		t.Errorf("want error nil")
+	if err == nil {
+		t.Errorf("want error not nil")
 	}
 	err = CheckCtlHealthyStat(HealthLiveness)
 	if err == nil {

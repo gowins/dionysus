@@ -38,7 +38,7 @@ func TestSetup(t *testing.T) {
 	viper.Set("Mysql.DbName", "f2ff2")
 	viper.Set("Redis.UserName", "vwevw")
 	viper.WriteConfig()
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 10)
 	for index, res := range expectRes {
 		if res != getRes[index] {
 			t.Errorf("want string %v, get string %v", res, getRes[index])
