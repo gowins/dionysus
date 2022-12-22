@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gowins/dionysus/ginx"
@@ -146,11 +147,9 @@ func (g *ginCommand) registerHealth() {
 }
 
 func (g *ginCommand) stopServer() {
-	log.Infof("[info] Server exiting")
-	if err := g.server.Shutdown(context.TODO()); err != nil {
-		log.Infof("[error] Server forced to shutdown:", err)
-		os.Exit(1)
-	}
+	log.Infof("hgsstress Server exiting start %v", time.Now().String())
+	err := g.server.Shutdown(context.TODO())
+	log.Infof("hgsstress Server exiting end %v, error is %v", time.Now().String(), err)
 }
 
 func (g *ginCommand) GetShutdownFunc() StopFunc {
