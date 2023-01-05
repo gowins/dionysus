@@ -15,7 +15,7 @@ func main() {
 	client, err := rmq.NewProducer(&rmq.ProducerConfig{
 		NameSrvAddr:    []string{"http://rmq-cn-zvp2ud6lc0e.cn-hangzhou.rmq.aliyuncs.com:8080"},
 		UseCredentials: true,
-		AccessKey:      "5qjJ0K0SdXIvuj2t",
+		AccessKey:      "5qjJ0K0SdXIvuj2t3",
 		SecretKey:      "3yuDlpGFwL2itNkAx2Djxe+XcK1BDLC1VFqD6b7CV+A=",
 		Group:          "hltv_g",
 	})
