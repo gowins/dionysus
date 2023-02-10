@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -12,7 +13,7 @@ var testBrokerArr = []string{"addr1:9092", "addr2:9092"}
 //go:norace
 func TestGetReader(t *testing.T) {
 	Convey("Test general reader", t, func() {
-		r, err := newReader(nil, "none", "id", 1, ReaderWithAsync())
+		r, err := newReader(nil, "none", "id", 1, ReaderWithCommitInterval(time.Millisecond*50))
 		So(r, ShouldBeNil)
 		So(err, ShouldBeError)
 

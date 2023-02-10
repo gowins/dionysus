@@ -5,8 +5,8 @@ import logger "github.com/gowins/dionysus/log"
 var (
 	defaultLogFields = map[string]interface{}{"pkg": "kafka", "type": "internal"}
 	log              = initLog()
-	kLogger          = &debugLogger{log}
-	kErrorLogger     = &errorLogger{log}
+	KLogger          = &debugLogger{log}
+	KErrorLogger     = &errorLogger{log}
 )
 
 func initLog() logger.Logger {
@@ -17,8 +17,8 @@ func initLog() logger.Logger {
 func SetLog(l logger.Logger) {
 	log = l.WithFields(defaultLogFields)
 	log.Debug("kafka log is set")
-	kLogger = &debugLogger{log}
-	kErrorLogger = &errorLogger{log}
+	KLogger = &debugLogger{log}
+	KErrorLogger = &errorLogger{log}
 }
 
 type debugLogger struct {

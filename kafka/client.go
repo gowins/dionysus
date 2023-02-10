@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"fmt"
-
 	kafka "github.com/segmentio/kafka-go"
 )
 
@@ -30,8 +29,6 @@ func newReader(brokers []string, topic, groupID string, partition int, options .
 	conf.Topic = topic
 	conf.Partition = partition
 	conf.GroupID = groupID
-	conf.Logger = kLogger
-	conf.ErrorLogger = kErrorLogger
 
 	if conf.GroupID != "" {
 		conf.WatchPartitionChanges = true
@@ -65,8 +62,6 @@ func newWriter(brokers []string, topic string, balancer kafka.Balancer, options 
 	conf := defaultWriterConfig
 	conf.Brokers = brokers
 	conf.Topic = topic
-	conf.Logger = kLogger
-	conf.ErrorLogger = kErrorLogger
 
 	for _, o := range options {
 		o(&conf)
