@@ -10,8 +10,8 @@ import (
 //go:norace
 func TestSetLog(t *testing.T) {
 	Convey("Before set", t, func() {
-		So(kLogger.Logger, ShouldResemble, log)
-		So(kErrorLogger.Logger, ShouldResemble, log)
+		So(KLogger.Logger, ShouldResemble, log)
+		So(KErrorLogger.Logger, ShouldResemble, log)
 		// oldLogger := log
 
 		Convey("set a new logger", func() {
@@ -22,10 +22,10 @@ func TestSetLog(t *testing.T) {
 			// So(oldLogger, ShouldNotResemble, newLogger)
 			// So(oldLogger, ShouldNotResemble, log)
 
-			So(kLogger.Logger, ShouldResemble, log)
-			So(kErrorLogger.Logger, ShouldResemble, log)
-			kLogger.Printf("TestPrint %s", "arg")
-			kErrorLogger.Printf("TestPrint %s", "arg")
+			So(KLogger.Logger, ShouldResemble, log)
+			So(KErrorLogger.Logger, ShouldResemble, log)
+			KLogger.Printf("TestPrint %s", "arg")
+			KErrorLogger.Printf("TestPrint %s", "arg")
 		})
 
 	})
