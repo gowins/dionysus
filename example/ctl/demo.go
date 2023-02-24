@@ -87,7 +87,6 @@ func main() {
 					span.End()
 					continue
 				}
-				fmt.Printf("request header %v\n", request.Header)
 				rsp, err := httpClient.Do(request)
 				if err != nil {
 					fmt.Printf("time %v http error %v\n", time.Now().String(), err)
