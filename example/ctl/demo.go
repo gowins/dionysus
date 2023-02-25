@@ -3,14 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/gowins/dionysus/httpclient"
-	otm "github.com/gowins/dionysus/opentelemetry"
+	"github.com/gowins/dionysus/log"
 	"github.com/gowins/dionysus/step"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	oteltrace "go.opentelemetry.io/otel/trace"
-	"io"
-	"net/http"
 	"time"
 
 	"github.com/gowins/dionysus"
@@ -34,7 +28,6 @@ func main() {
 		{
 			StepName: "PostPrint1", Func: func() error {
 				fmt.Println(green, "=========== post 1 =========== ", white)
-				otm.Stop()
 				return nil
 			},
 		},
@@ -48,11 +41,7 @@ func main() {
 	preSteps := []step.InstanceStep{
 		{
 			StepName: "PrePrint1", Func: func() error {
-				otm.Setup(otm.WithServiceInfo(&otm.ServiceInfo{
-					Name:      "testCtl217",
-					Namespace: "testCtlNamespace217",
-					Version:   "testCtlVersion217",
-				}))
+				fmt.Println(green, "=========== pre 1 =========== ", white)
 				return nil
 			},
 		},
@@ -65,47 +54,15 @@ func main() {
 	}
 	// PreRun exec before server start
 	_ = d.PreRunStepsAppend(preSteps...)
-	httpClient := httpclient.NewWithTracer()
+
 	ctlCmd := cmd.NewCtlCommand()
 	_ = ctlCmd.RegRunFunc(func() error {
-		tracer := otel.GetTracerProvider().Tracer("hgsmytracer", oteltrace.WithInstrumentationVersion("v0.1.1"))
-		timer1 := time.NewTicker(10 * time.Second)
+		timer1 := time.NewTicker(5 * time.Second)
 		for {
 			select {
 			case <-timer1.C:
-				opts := []oteltrace.SpanStartOption{
-					oteltrace.WithAttributes(attribute.String("go.template1", "name")),
-					oteltrace.WithSpanKind(oteltrace.SpanKindServer),
-				}
-				ctx, span := tracer.Start(context.Background(), "bbb", opts...)
-				fmt.Printf("traced %v\n", span.SpanContext().TraceID().String())
-				span.AddEvent("do http req")
-				url := "http://127.0.0.1:8080/demogroup/demoroute"
-				request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-				if err != nil {
-					fmt.Printf("new request error %v\n", err)
-					span.End()
-					continue
-				}
-				rsp, err := httpClient.Do(request)
-				if err != nil {
-					fmt.Printf("time %v http error %v\n", time.Now().String(), err)
-					span.End()
-					continue
-				}
-				if rsp == nil {
-					fmt.Printf("http error rsp is nil\n")
-					span.End()
-					continue
-				}
-				if rsp.StatusCode >= 300 {
-					fmt.Printf("http error code %v\n", rsp.StatusCode)
-				} else {
-					fmt.Printf("http sucess code %v\n", rsp.StatusCode)
-				}
-				io.Copy(io.Discard, rsp.Body)
-				rsp.Body.Close()
-				span.End()
+				log.Noticef("this is noticef")
+				log.Notice("this is notice")
 			case <-ctlCmd.Ctx.Done():
 				fmt.Printf("this is stopChan %v\n", time.Now().String())
 				return nil

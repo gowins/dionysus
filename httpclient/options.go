@@ -47,10 +47,3 @@ func WithTransport(t http.RoundTripper) Option {
 		c.Transport = t
 	}
 }
-
-// WithTracerEnable sets the Tracer enable ture
-func WithTracerEnable() Option {
-	return func(c *Options) {
-		c.TracerEnable = true
-	}
-}

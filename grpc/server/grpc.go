@@ -5,7 +5,6 @@ import (
 	"net"
 	"reflect"
 
-	otm "github.com/gowins/dionysus/opentelemetry"
 	"github.com/gowins/dionysus/recovery"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/pkg/errors"
@@ -89,12 +88,6 @@ func (g *grpcServer) Init(opts ...grpc.ServerOption) (gErr error) {
 	opts1 := g.GetDefaultServerOpts()
 	if g.Cfg.TlsCfg != nil {
 		opts1 = append(opts1, grpc.Creds(credentials.NewTLS(g.Cfg.TlsCfg)))
-	}
-
-	if otm.TracerIsEnable() {
-		log.Infof("[Dio] grpc use opentelemetry trace")
-		g.unaryInterceptors = append([]grpc.UnaryServerInterceptor{otm.GrpcUnaryTraceInterceptor()}, g.unaryInterceptors...)
-		g.streamInterceptors = append([]grpc.StreamServerInterceptor{otm.GrpcStreamTraceInterceptor()}, g.streamInterceptors...)
 	}
 
 	opts1 = append(opts1, grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(g.unaryInterceptors...)),

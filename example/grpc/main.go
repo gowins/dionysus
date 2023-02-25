@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	otm "github.com/gowins/dionysus/opentelemetry"
-	"github.com/gowins/dionysus/step"
 	"log"
 	"time"
 
@@ -30,23 +28,8 @@ func (s *gserver) SayHello(ctx context.Context, in *hw.HelloRequest) (*hw.HelloR
 
 func main() {
 	dio := dionysus.NewDio()
-	dio.PreRunStepsAppend(step.InstanceStep{
-		StepName: "init trace",
-		Func: func() error {
-			otm.Setup(otm.WithServiceInfo(&otm.ServiceInfo{
-				Name:      "testGrpc217",
-				Namespace: "testGrpcNamespace217",
-				Version:   "testGrpcVersion217",
-			}), otm.WithTraceExporter(&otm.Exporter{
-				ExporterEndpoint: otm.DefaultStdout,
-				Insecure:         false,
-				Creds:            otm.DefaultCred,
-			}))
-			return nil
-		},
-	})
 	cfg := server.DefaultCfg
-	cfg.Address = "127.0.0.1:8081"
+	cfg.Address = ":8081"
 	c := cmd.NewGrpcCmd(cmd.WithCfg(cfg))
 	c.EnableDebug()
 	// timeout interceptor
@@ -54,6 +37,9 @@ func main() {
 	// recover interceptor
 	c.AddUnaryServerInterceptors(serverinterceptors.RecoveryUnary(serverinterceptors.DefaultRecovery()))
 	c.AddStreamServerInterceptors(serverinterceptors.RecoveryStream(serverinterceptors.DefaultRecovery()))
+	// tacing interceptor
+	c.AddUnaryServerInterceptors(serverinterceptors.OpenTracingUnary())
+	c.AddStreamServerInterceptors(serverinterceptors.OpenTracingStream())
 	// register grpc service
 	c.RegisterGrpcService(hw.RegisterGreeterServer, &gserver{})
 	dio.DioStart("grpc", c)
