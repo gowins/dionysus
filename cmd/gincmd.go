@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/gowins/dionysus/opentelemetry"
 	"net/http"
 	"os"
 	"sync"
@@ -78,6 +79,11 @@ func (t *ginCommand) Flags() *pflag.FlagSet {
 func (g *ginCommand) startServer() {
 	log.Infof("[Dio] Engine setting with address %v", g.server.Addr)
 	g.server.Handler = g.Handler()
+	if opentelemetry.TracerIsEnable() {
+		log.Infof("[Dio] Engine use opentelemetry trace")
+		g.server.Handler = opentelemetry.InitHttpHandler(g.server.Handler)
+	}
+
 	if err := g.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Infof("listen: %s\n", err)
 		os.Exit(1)

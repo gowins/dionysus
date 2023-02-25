@@ -7,18 +7,20 @@ import (
 
 // Options represents the http client options
 type Options struct {
-	Retrier    Retriable
-	Timeout    time.Duration
-	RetryCount int
-	Middles    []Middleware
-	Transport  http.RoundTripper
+	Retrier      Retriable
+	Timeout      time.Duration
+	RetryCount   int
+	Middles      []Middleware
+	Transport    http.RoundTripper
+	TracerEnable bool
 }
 
 func (opts Options) Clone() Options {
 	opts1 := Options{
-		Retrier:    opts.Retrier,
-		Timeout:    opts.Timeout,
-		RetryCount: opts.RetryCount,
+		Retrier:      opts.Retrier,
+		Timeout:      opts.Timeout,
+		RetryCount:   opts.RetryCount,
+		TracerEnable: opts.TracerEnable,
 	}
 
 	for i := range opts.Middles {

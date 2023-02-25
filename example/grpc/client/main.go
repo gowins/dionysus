@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	otm "github.com/gowins/dionysus/opentelemetry"
 	"log"
 	"sync"
 
@@ -13,12 +14,17 @@ import (
 
 func main() {
 	xlog.Setup(xlog.SetProjectName("grpc-client"))
+	otm.Setup(otm.WithServiceInfo(&otm.ServiceInfo{
+		Name:      "testGrpcCli217",
+		Namespace: "testGrpcCliNamespace217",
+		Version:   "testGrpcCliVersion217",
+	}))
 	var wg sync.WaitGroup
 	for i := 0; i < 1; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			conn, err := client.New(":8081")
+			conn, err := client.NewConnWithTracer("127.0.0.1:8081")
 			if err != nil {
 				log.Fatalf("did not connect: %v", err)
 			}
@@ -35,4 +41,5 @@ func main() {
 		}()
 	}
 	wg.Wait()
+	select {}
 }
