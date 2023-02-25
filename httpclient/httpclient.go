@@ -2,7 +2,6 @@ package httpclient
 
 import (
 	"bytes"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -73,10 +72,6 @@ func newOptions(opts ...Option) Options {
 		opt(&opts1)
 	}
 
-	if opts1.TracerEnable {
-		opts1.Transport = otelhttp.NewTransport(opts1.Transport)
-	}
-
 	return opts1
 }
 
@@ -84,12 +79,6 @@ func newOptions(opts ...Option) Options {
 func New(opts ...Option) Client {
 	opts1 := newOptions(opts...)
 	return newClient(opts1)
-}
-
-// NewWithTracer returns a new instance of http client with tracer
-func NewWithTracer(opts ...Option) Client {
-	opts = append(opts, WithTracerEnable())
-	return New(opts...)
 }
 
 func newClient(opts Options) Client {

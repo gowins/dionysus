@@ -6,9 +6,6 @@ import (
 	"github.com/gowins/dionysus"
 	"github.com/gowins/dionysus/cmd"
 	"github.com/gowins/dionysus/ginx"
-	otm "github.com/gowins/dionysus/opentelemetry"
-	"github.com/gowins/dionysus/step"
-	oteltrace "go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"time"
@@ -25,25 +22,9 @@ func main() {
 	}
 	gcmd.RegShutdownFunc(cmd.StopStep{
 		StopFn: func() {
-			otm.Stop()
 			fmt.Printf("this gcmd stop\n")
 		},
 		StepName: "gcmdstop",
-	})
-	d.PreRunStepsAppend(step.InstanceStep{
-		StepName: "init trace",
-		Func: func() error {
-			otm.Setup(otm.WithServiceInfo(&otm.ServiceInfo{
-				Name:      "testGin217",
-				Namespace: "testGinNamespace217",
-				Version:   "testGinVersion217",
-			}), otm.WithTraceExporter(&otm.Exporter{
-				ExporterEndpoint: otm.DefaultStdout,
-				Insecure:         false,
-				Creds:            otm.DefaultCred,
-			}))
-			return nil
-		},
 	})
 	//定义路由/test和相应的handler函数
 	gcmd.Handle(http.MethodGet, "/test", func(c *gin.Context) ginx.Render {
@@ -58,22 +39,11 @@ func main() {
 	//创建路由组/demogroup
 	demogroup := gcmd.Group("/demogroup")
 	//在路由组/demogroup应用中间件authMiddle，认证失败就返回错误
-	//demogroup.Use(authMiddle)
+	demogroup.Use(authMiddle)
 	//在路由组/demogroup应用中间件demoMiddle，塞入请求时间
 	demogroup.Use(demoMiddle)
 	//在路由组/demogroup下组成路由/demogroup/demoroute将会执行上面注册的中间件authMiddle和demoMiddle
 	demogroup.Handle(http.MethodGet, "/demoroute", func(c *gin.Context) ginx.Render {
-		reqCtx := c.Request.Context()
-		//fmt.Printf("Request header is %v\n", c.Request.Header)
-		//ctx, span := tracer.Start(reqCtx, "aaa", opts...)
-		span := oteltrace.SpanFromContext(reqCtx)
-		span.AddEvent("qwqw")
-		fmt.Printf("traced %v\n", span.SpanContext().TraceID().String())
-		//c.Request = c.Request.WithContext()
-		//defer span.End()
-		//_, mspan := tracer.Start(ctx, "aaabbb")
-		//mspan.AddEvent("aabbb")
-		//mspan.End()
 		//会拿到demoMiddle中间件塞入gin.Contex的值
 		va, ok := c.Get("demoMiddle")
 		if !ok {
