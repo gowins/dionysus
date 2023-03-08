@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 	"github.com/gowins/dionysus/grpc/balancer/resolver"
 	"github.com/gowins/dionysus/grpc/registry"
@@ -26,6 +27,18 @@ func New(service string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 		return nil, errors.Wrapf(err, "dial %s error\n", target)
 	}
 	return conn, nil
+}
+
+func NewConnWithTracer(service string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	opts = append(opts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	return New(service, opts...)
+}
+
+func GetConnWithTracer(service string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	opts = append(opts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	return Get(service, opts...)
 }
 
 // Get new grpc client
