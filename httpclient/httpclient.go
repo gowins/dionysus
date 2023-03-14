@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -196,15 +195,16 @@ func (c *client) Do(request *http.Request) (*http.Response, error) {
 		err        error
 		resp       *http.Response
 		bodyReader *bytes.Reader
+		reqData    []byte
 	)
 
 	if request.Body != nil {
-		reqData, err := ioutil.ReadAll(request.Body)
+		reqData, err = io.ReadAll(request.Body)
 		if err != nil {
 			return nil, err
 		}
 		bodyReader = bytes.NewReader(reqData)
-		request.Body = ioutil.NopCloser(bodyReader) // prevents closing the body between retries
+		request.Body = io.NopCloser(bodyReader) // prevents closing the body between retries
 	}
 
 	for i := 0; i < c.opts.RetryCount; i++ {
@@ -213,11 +213,6 @@ func (c *client) Do(request *http.Request) (*http.Response, error) {
 		}
 
 		err = c.do(request, func(response *http.Response) error {
-			if bodyReader != nil {
-				// Reset the body reader after the request since at this point it's already read
-				// Note that it's safe to ignore the error here since the 0,0 position is always valid
-				_, _ = bodyReader.Seek(0, 0)
-			}
 			resp = response
 			return nil
 		})
@@ -225,6 +220,10 @@ func (c *client) Do(request *http.Request) (*http.Response, error) {
 		if err != nil {
 			if backoffTime := c.opts.Retrier.NextInterval(i); backoffTime != 0 {
 				time.Sleep(backoffTime)
+			}
+			if len(reqData) != 0 {
+				bodyReader = bytes.NewReader(reqData)
+				request.Body = io.NopCloser(bodyReader)
 			}
 			continue
 		}
