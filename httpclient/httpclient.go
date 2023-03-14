@@ -213,11 +213,6 @@ func (c *client) Do(request *http.Request) (*http.Response, error) {
 		}
 
 		err = c.do(request, func(response *http.Response) error {
-			if bodyReader != nil {
-				// Reset the body reader after the request since at this point it's already read
-				// Note that it's safe to ignore the error here since the 0,0 position is always valid
-				_, _ = bodyReader.Seek(0, 0)
-			}
 			resp = response
 			return nil
 		})
@@ -226,8 +221,10 @@ func (c *client) Do(request *http.Request) (*http.Response, error) {
 			if backoffTime := c.opts.Retrier.NextInterval(i); backoffTime != 0 {
 				time.Sleep(backoffTime)
 			}
-			bodyReader = bytes.NewReader(reqData)
-			request.Body = io.NopCloser(bodyReader)
+			if len(reqData) != 0 {
+				bodyReader = bytes.NewReader(reqData)
+				request.Body = io.NopCloser(bodyReader)
+			}
 			continue
 		}
 
