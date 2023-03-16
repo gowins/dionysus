@@ -1,11 +1,9 @@
 package client
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
-	"github.com/douyu/jupiter/pkg/client/grpc/balancer/p2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
@@ -34,7 +32,6 @@ var clientParameters = keepalive.ClientParameters{
 var defaultDialOpts = []grpc.DialOption{
 	grpc.WithTransportCredentials(insecure.NewCredentials()),
 	grpc.WithBlock(),
-	grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, p2c.Name)), //nolint:staticcheck
 	grpc.WithKeepaliveParams(clientParameters),
 	grpc.WithDefaultCallOptions(
 		grpc.MaxCallRecvMsgSize(DefaultMaxRecvMsgSize),

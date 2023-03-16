@@ -31,14 +31,14 @@ func TestSetup(t *testing.T) {
 	Setup(configHandlers...)
 	viper.Set("Mysql.DbName", "4222")
 	viper.WriteConfig()
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 5)
 	viper.Set("Redis.UserName", "g43g")
 	viper.WriteConfig()
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 5)
 	viper.Set("Mysql.DbName", "f2ff2")
 	viper.Set("Redis.UserName", "vwevw")
 	viper.WriteConfig()
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 5)
 	for index, res := range expectRes {
 		if res != getRes[index] {
 			t.Errorf("want string %v, get string %v", res, getRes[index])

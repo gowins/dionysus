@@ -2,6 +2,9 @@ package client
 
 import (
 	"context"
+	"fmt"
+	"github.com/douyu/jupiter/pkg/client/grpc/balancer/p2c"
+	"github.com/gowins/dionysus/grpc/balancer/hash"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 	"github.com/gowins/dionysus/grpc/balancer/resolver"
@@ -22,7 +25,9 @@ func buildTarget(service string) string {
 
 func New(service string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	target := buildTarget(service)
-	conn, err := dial(target, append(defaultDialOpts, opts...)...)
+	dialOpts := append(defaultDialOpts,
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, p2c.Name)))
+	conn, err := dial(target, append(dialOpts, opts...)...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "dial %s error\n", target)
 	}
@@ -75,6 +80,17 @@ func dial(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	conn, err := grpc.DialContext(ctx, target, opts...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "DialContext error, target:%s\n", target)
+	}
+	return conn, nil
+}
+
+func NewConnWithHashBalancer(endpoints []string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	target := resolver.BuildDirectTarget(endpoints)
+	dialOpts := append(defaultDialOpts,
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, hash.Name)))
+	conn, err := dial(target, append(dialOpts, opts...)...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "dial %s error\n", target)
 	}
 	return conn, nil
 }
