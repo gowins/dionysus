@@ -9,7 +9,7 @@ import (
 )
 
 func LimiterMiddleware(limit int) gin.HandlerFunc {
-	limiter := rate.NewLimiter(rate.Every(time.Second), limit)
+	limiter := rate.NewLimiter(rate.Every(time.Second/time.Duration(limit)), limit)
 	return func(c *gin.Context) {
 		if !limiter.Allow() {
 			c.JSON(http.StatusTooManyRequests, Response{
