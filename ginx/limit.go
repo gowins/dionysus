@@ -1,9 +1,10 @@
 package ginx
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
-	"net/http"
 )
 
 func LimiterMiddleware(limit int) gin.HandlerFunc {
