@@ -15,6 +15,7 @@ func LimiterMiddleware(limit int) gin.HandlerFunc {
 				Code: ginxLimitingCode,
 				Msg:  ginxLimitingMsg,
 			})
+			log.Errorf("too many requests, limit open, route %v", c.Request.URL.String())
 			c.Abort()
 		}
 		c.Next()

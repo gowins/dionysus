@@ -16,11 +16,11 @@ func createTransport() http.RoundTripper {
 			DualStack: true,
 		}).DialContext,
 		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          100,
+		MaxIdleConns:          runtime.GOMAXPROCS(0)*12 + 100,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
-		MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1, // http client缓存数量
+		MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0)*12 + 1, // http client缓存数量
 	}
 
 	return trans
