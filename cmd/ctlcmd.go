@@ -37,6 +37,11 @@ func (c *ctl) RegRunFunc(f func() error) error {
 		return errors.New("Registering nil func ")
 	}
 	c.runFunc = func() error {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Errorf("dionysus ctl panic %v", r)
+			}
+		}()
 		//run health
 		if err := c.health.FileObserve(healthy.CheckInterval); err != nil {
 			log.Errorf("health check error %v\n", err)

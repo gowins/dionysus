@@ -19,6 +19,7 @@ func RecoveryStream(f grpc_recovery.RecoveryHandlerFuncContext) grpc.StreamServe
 
 func DefaultRecovery() grpc_recovery.RecoveryHandlerFuncContext {
 	return func(ctx context.Context, p interface{}) (err error) {
+		log.Errorf("gin grpc server panic %v", p)
 		return status.Errorf(codes.Internal, "[grpc] server recovery error, err: %v", p)
 	}
 }
