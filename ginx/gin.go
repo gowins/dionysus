@@ -27,7 +27,9 @@ func NewZeroGinRouter(opts ...GinOption) ZeroGinRouter {
 	for _, opt := range opts {
 		opt(g)
 	}
-	g.Use(gin.Recovery()) // 默认注册recovery
+	gin.DefaultWriter = &normalWrite{}
+	gin.DefaultErrorWriter = &errorWrite{}
+	g.Use(gin.RecoveryWithWriter(&panicWrite{})) // 默认注册recovery
 	r := &ginRouter{
 		ginGroup: ginGroup{g: &g.RouterGroup},
 		engine:   g,

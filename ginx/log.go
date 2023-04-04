@@ -22,3 +22,27 @@ func SetLog(l logger.Logger) {
 	log = l.WithFields(defaultLogFields)
 	log.Debug("gin log is set")
 }
+
+type panicWrite struct {
+}
+
+func (pw *panicWrite) Write(p []byte) (n int, err error) {
+	log.Errorf("dionysus gin panic: %v", string(p))
+	return len(p), nil
+}
+
+type errorWrite struct {
+}
+
+func (ew *errorWrite) Write(p []byte) (n int, err error) {
+	log.Errorf("dionysus gin error: %v", string(p))
+	return len(p), nil
+}
+
+type normalWrite struct {
+}
+
+func (nw *normalWrite) Write(p []byte) (n int, err error) {
+	log.Infof("dionysus gin: %v", string(p))
+	return len(p), nil
+}
