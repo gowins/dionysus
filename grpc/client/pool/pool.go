@@ -10,6 +10,13 @@ import (
 	"time"
 )
 
+const maxConn = 300
+
+var (
+	AutoScalePeriod = 30 * time.Second
+	AutoScaler      = false
+)
+
 type GrpcPool struct {
 	conns       []*GrpcConn
 	ReserveSize int
@@ -17,6 +24,7 @@ type GrpcPool struct {
 	Target      string
 	index       uint32
 	rand        *rand.Rand
+	autoScaler  bool
 	sync.Locker
 }
 
@@ -33,7 +41,7 @@ func InitGrpcPool(target string, size int, dialOptions ...grpc.DialOption) (*Grp
 		return nil, fmt.Errorf("grpc pool reserve size should not be <= 3")
 	}
 	gp := &GrpcPool{
-		conns:       make([]*GrpcConn, size),
+		conns:       make([]*GrpcConn, maxConn),
 		ReserveSize: size,
 		DialOptions: dialOptions,
 		Target:      target,
@@ -49,6 +57,10 @@ func InitGrpcPool(target string, size int, dialOptions ...grpc.DialOption) (*Grp
 			conn:     conn,
 			inflight: 0,
 		}
+	}
+	gp.autoScaler = AutoScaler
+	if gp.autoScaler == true {
+		go gp.autoScalerRun()
 	}
 	return gp, nil
 }
@@ -67,6 +79,7 @@ func (gp *GrpcPool) NewStream(ctx context.Context, desc *grpc.StreamDesc, method
 	return grpcConn.conn.NewStream(ctx, desc, method, opts...)
 }
 
+// TODO make sure grpc conn state
 func (gp *GrpcPool) pickLeastConn() *GrpcConn {
 	gp.Lock()
 	randIndex1 := gp.rand.Uint32()
@@ -86,4 +99,52 @@ func (gp *GrpcPool) pickLeastConn() *GrpcConn {
 		minIndex = randIndex3
 	}
 	return gp.conns[int(minIndex)%gp.ReserveSize]
+}
+
+func (gp *GrpcPool) autoScalerRun() {
+	tk := time.NewTicker(AutoScalePeriod)
+	for {
+		select {
+		case <-tk.C:
+			totalUse := gp.GetTotalUse()
+			if totalUse > gp.ReserveSize*80 {
+				deltaConn := (totalUse - gp.ReserveSize*80) / 50
+				gp.poolScaler(deltaConn)
+			}
+		}
+	}
+}
+
+func (gp *GrpcPool) poolScaler(deltaConn int) {
+	if deltaConn < 1 {
+		log.Errorf("deltaConn is %v, no need pool scaler", deltaConn)
+		return
+	}
+	if deltaConn+gp.ReserveSize > maxConn {
+		deltaConn = maxConn - gp.ReserveSize
+	}
+
+	for i := 0; i < deltaConn; i++ {
+		conn, err := grpc.Dial(gp.Target, gp.DialOptions...)
+		if err != nil {
+			log.Infof("grpc pool is scaler form %v to %v", gp.ReserveSize, gp.ReserveSize+i)
+			gp.ReserveSize = gp.ReserveSize + i
+			log.Errorf("grpc dial target %v error %v", gp.Target, err)
+			return
+		}
+		gp.conns[gp.ReserveSize+i] = &GrpcConn{
+			conn:     conn,
+			inflight: 0,
+		}
+	}
+	log.Infof("grpc pool is scaler form %v to %v", gp.ReserveSize, gp.ReserveSize+deltaConn)
+	gp.ReserveSize = gp.ReserveSize + deltaConn
+}
+
+func (gp *GrpcPool) GetTotalUse() int {
+	var totalUse int
+	for i := 0; i < gp.ReserveSize; i++ {
+		totalUse = totalUse + int(gp.conns[i].inflight)
+	}
+	return totalUse
 }
