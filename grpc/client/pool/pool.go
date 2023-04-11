@@ -217,13 +217,14 @@ func (gp *GrpcPool) GetTotalUse() int {
 }
 
 func (gp *GrpcPool) GetGrpcPoolState() *GrpcPoolState {
-	connStates := make([]GrpcConnState, len(gp.conns))
-	for i, gconn := range gp.conns {
+	connStates := make([]GrpcConnState, gp.poolSize)
+	for i := 0; i < gp.poolSize; i++ {
 		connStates[i] = GrpcConnState{
-			connState: gconn.conn.GetState().String(),
-			inflight:  gconn.inflight,
+			connState: gp.conns[i].conn.GetState().String(),
+			inflight:  gp.conns[i].inflight,
 		}
 	}
+
 	return &GrpcPoolState{
 		ConnStates:  connStates,
 		ReserveSize: gp.poolSize,
