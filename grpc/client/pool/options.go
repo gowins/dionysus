@@ -61,7 +61,7 @@ var DefaultScaleOption = &ScaleOption{
 
 var DefaultDialTimeout = 3 * time.Second
 
-var defaultDialOpts = []grpc.DialOption{
+var DefaultDialOpts = []grpc.DialOption{
 	grpc.WithTransportCredentials(insecure.NewCredentials()),
 	grpc.WithBlock(),
 	grpc.WithInitialWindowSize(InitialWindowSize),

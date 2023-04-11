@@ -39,7 +39,7 @@ func InitGrpcPool(target string, opts ...Option) (*GrpcPool, error) {
 	}
 	gp := &GrpcPool{
 		reserveSize: defaultReserveSize,
-		dialOptions: defaultDialOpts,
+		dialOptions: DefaultDialOpts,
 		target:      target,
 		Locker:      new(sync.Mutex),
 		rand:        rand.New(rand.NewSource(time.Now().Unix())),
