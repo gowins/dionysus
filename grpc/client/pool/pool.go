@@ -50,10 +50,14 @@ func InitGrpcPool(target string, opts ...Option) (*GrpcPool, error) {
 		opt(gp)
 	}
 
+	if gp.scaleOption.MaxConn < gp.reserveSize {
+		gp.scaleOption.MaxConn = gp.reserveSize
+	}
+
 	gp.conns = make([]*GrpcConn, gp.scaleOption.MaxConn)
 
 	for i := 0; i < gp.reserveSize; i++ {
-		conn, err := grpc.Dial(gp.target, gp.dialOptions...)
+		conn, err := grpcDialWithTimeout(gp.target, gp.dialOptions...)
 		if err != nil {
 			return gp, fmt.Errorf("grpc dial target %v error %v", gp.target, err)
 		}
@@ -67,6 +71,17 @@ func InitGrpcPool(target string, opts ...Option) (*GrpcPool, error) {
 		go gp.autoScalerRun()
 	}
 	return gp, nil
+}
+
+func grpcDialWithTimeout(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultDialTimeout)
+	defer cancel()
+
+	conn, err := grpc.DialContext(ctx, target, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
 }
 
 func (gp *GrpcPool) Invoke(ctx context.Context, method string, args interface{}, reply interface{}, opts ...grpc.CallOption) error {
@@ -115,6 +130,7 @@ func (gp *GrpcPool) pickLeastConn() *GrpcConn {
 }
 
 func (gp *GrpcPool) autoScalerRun() {
+	log.Infof("grpc pool auto scaler start period %v", gp.scaleOption.ScalePeriod)
 	tk := time.NewTicker(gp.scaleOption.ScalePeriod)
 	for {
 		select {
@@ -142,7 +158,7 @@ func (gp *GrpcPool) poolScaler(deltaConn int) {
 	}
 
 	for i := 0; i < deltaConn; i++ {
-		conn, err := grpc.Dial(gp.target, gp.dialOptions...)
+		conn, err := grpcDialWithTimeout(gp.target, gp.dialOptions...)
 		if err != nil {
 			log.Infof("grpc pool is scaler form %v to %v", gp.reserveSize, gp.reserveSize+i)
 			gp.reserveSize = gp.reserveSize + i

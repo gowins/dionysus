@@ -59,6 +59,8 @@ var DefaultScaleOption = &ScaleOption{
 	DesireMaxStream: 80,
 }
 
+var DefaultDialTimeout = 3 * time.Second
+
 var defaultDialOpts = []grpc.DialOption{
 	grpc.WithTransportCredentials(insecure.NewCredentials()),
 	grpc.WithBlock(),
@@ -66,7 +68,6 @@ var defaultDialOpts = []grpc.DialOption{
 	grpc.WithInitialConnWindowSize(InitialConnWindowSize),
 	grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(MaxSendMsgSize)),
 	grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxRecvMsgSize)),
-
 	grpc.WithKeepaliveParams(keepalive.ClientParameters{
 		Time:                KeepAliveTime,
 		Timeout:             KeepAliveTimeout,
