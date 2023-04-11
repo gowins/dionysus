@@ -179,16 +179,13 @@ func (gp *GrpcPool) autoScalerRun() {
 }
 
 func (gp *GrpcPool) poolScaler(deltaConn int) {
-	if deltaConn < 1 {
-		log.Errorf("deltaConn is %v, no need pool scaler", deltaConn)
-		return
-	}
 	if deltaConn+gp.poolSize > gp.scaleOption.MaxConn {
 		deltaConn = gp.scaleOption.MaxConn - gp.poolSize
 	}
 
-	if deltaConn == 0 {
+	if deltaConn <= 0 {
 		log.Warnf("grpc conn reach max conn, be careful")
+		return
 	}
 
 	for i := 0; i < deltaConn; i++ {
