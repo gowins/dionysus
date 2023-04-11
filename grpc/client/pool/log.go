@@ -3,7 +3,7 @@ package pool
 import logger "github.com/gowins/dionysus/log"
 
 var (
-	defaultLogFields = map[string]interface{}{"grpcPool": "gin", "type": "internal"}
+	defaultLogFields = map[string]interface{}{"pkg": "grpcPool", "type": "internal"}
 	log              = initLog()
 )
 

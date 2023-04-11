@@ -4,6 +4,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
+	"sync"
 	"time"
 )
 
@@ -11,7 +12,7 @@ type Option func(*GrpcPool)
 
 func WithReserveSize(reserveSize int) Option {
 	return func(pool *GrpcPool) {
-		pool.reserveSize = reserveSize
+		pool.poolSize = reserveSize
 	}
 }
 
@@ -43,12 +44,12 @@ const (
 	// InitialConnWindowSize we set it 256M is to provide system's throughput.
 	InitialConnWindowSize = 1 << 28
 
-	// MaxSendMsgSize set max gRPC request message size sent to server.
-	// If any request message size is larger than current value, an error will be reported from gRPC.
+	// MaxSendMsgSize set max gRPC request message poolSize sent to server.
+	// If any request message poolSize is larger than current value, an error will be reported from gRPC.
 	MaxSendMsgSize = 1 << 30
 
-	// MaxRecvMsgSize set max gRPC receive message size received from server.
-	// If any message size is larger than current value, an error will be reported from gRPC.
+	// MaxRecvMsgSize set max gRPC receive message poolSize received from server.
+	// If any message poolSize is larger than current value, an error will be reported from gRPC.
 	MaxRecvMsgSize = 1 << 30
 )
 
@@ -75,4 +76,7 @@ var DefaultDialOpts = []grpc.DialOption{
 	}),
 }
 
-var defaultReserveSize = 3
+var defaultPoolSize = 3
+
+var grpcPool sync.Map
+var poolInit sync.Mutex

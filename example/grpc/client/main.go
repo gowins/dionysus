@@ -39,7 +39,7 @@ var defaultDialOpts = []grpc.DialOption{
 
 func main() {
 	xlog.Setup(xlog.SetProjectName("grpc-client"))
-	gPool, err := pool.InitGrpcPool("127.0.0.1:8081")
+	gPool, err := pool.GetGrpcPool("127.0.0.1:8081")
 	if err != nil {
 		fmt.Printf("grpc pool init dial error %v\n", err)
 	}

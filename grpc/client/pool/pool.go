@@ -13,7 +13,7 @@ import (
 
 type GrpcPool struct {
 	conns       []*GrpcConn
-	reserveSize int
+	poolSize    int
 	dialOptions []grpc.DialOption
 	target      string
 	rand        *rand.Rand
@@ -50,25 +50,25 @@ func InitGrpcPool(target string, opts ...Option) (*GrpcPool, error) {
 		return nil, fmt.Errorf("grpc pool target should not be nil")
 	}
 	gp := &GrpcPool{
-		reserveSize: defaultReserveSize,
+		poolSize:    defaultPoolSize,
 		dialOptions: DefaultDialOpts,
 		target:      target,
 		Locker:      new(sync.Mutex),
 		rand:        rand.New(rand.NewSource(time.Now().Unix())),
-		scaleOption: &ScaleOption{Enable: false, MaxConn: defaultReserveSize},
+		scaleOption: &ScaleOption{Enable: false, MaxConn: defaultPoolSize},
 	}
 
 	for _, opt := range opts {
 		opt(gp)
 	}
 
-	if gp.scaleOption.MaxConn < gp.reserveSize {
-		gp.scaleOption.MaxConn = gp.reserveSize
+	if gp.scaleOption.MaxConn < gp.poolSize {
+		gp.scaleOption.MaxConn = gp.poolSize
 	}
 
 	gp.conns = make([]*GrpcConn, gp.scaleOption.MaxConn)
 
-	for i := 0; i < gp.reserveSize; i++ {
+	for i := 0; i < gp.poolSize; i++ {
 		conn, err := grpcDialWithTimeout(gp.target, gp.dialOptions...)
 		if err != nil {
 			return gp, fmt.Errorf("grpc dial target %v error %v", gp.target, err)
@@ -82,6 +82,28 @@ func InitGrpcPool(target string, opts ...Option) (*GrpcPool, error) {
 	if gp.scaleOption.Enable {
 		go gp.autoScalerRun()
 	}
+	return gp, nil
+}
+
+func GetGrpcPool(target string, opts ...Option) (*GrpcPool, error) {
+	if val, ok := grpcPool.Load(target); ok {
+		return val.(*GrpcPool), nil
+	}
+
+	poolInit.Lock()
+	defer poolInit.Unlock()
+
+	// 双检, 避免多次创建
+	if val, ok := grpcPool.Load(target); ok {
+		return val.(*GrpcPool), nil
+	}
+
+	gp, err := InitGrpcPool(target, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	grpcPool.Store(target, gp)
 	return gp, nil
 }
 
@@ -117,24 +139,24 @@ func (gp *GrpcPool) pickLeastConn() *GrpcConn {
 	randIndex3 := gp.rand.Uint32()
 	gp.Unlock()
 	minIndex := randIndex1
-	minInflight := gp.conns[int(minIndex)%gp.reserveSize].inflight
+	minInflight := gp.conns[int(minIndex)%gp.poolSize].inflight
 
-	if minInflight > gp.conns[int(randIndex2)%gp.reserveSize].inflight {
-		minInflight = gp.conns[int(randIndex2)%gp.reserveSize].inflight
+	if minInflight > gp.conns[int(randIndex2)%gp.poolSize].inflight {
+		minInflight = gp.conns[int(randIndex2)%gp.poolSize].inflight
 		minIndex = randIndex2
 	}
 
-	if minInflight > gp.conns[int(randIndex3)%gp.reserveSize].inflight {
-		minInflight = gp.conns[int(randIndex3)%gp.reserveSize].inflight
+	if minInflight > gp.conns[int(randIndex3)%gp.poolSize].inflight {
+		minInflight = gp.conns[int(randIndex3)%gp.poolSize].inflight
 		minIndex = randIndex3
 	}
-	grpcConn := gp.conns[int(minIndex)%gp.reserveSize]
+	grpcConn := gp.conns[int(minIndex)%gp.poolSize]
 
 	// if conn is not ready, choose a next ready conn
 	if grpcConn.conn.GetState() != connectivity.Ready {
-		for i := 0; i < gp.reserveSize; i++ {
-			if gp.conns[(int(minIndex)+i)%gp.reserveSize].conn.GetState() == connectivity.Ready {
-				return gp.conns[(int(minIndex)+1)%gp.reserveSize]
+		for i := 0; i < gp.poolSize; i++ {
+			if gp.conns[(int(minIndex)+i)%gp.poolSize].conn.GetState() == connectivity.Ready {
+				return gp.conns[(int(minIndex)+1)%gp.poolSize]
 			}
 		}
 	}
@@ -148,8 +170,8 @@ func (gp *GrpcPool) autoScalerRun() {
 		select {
 		case <-tk.C:
 			totalUse := gp.GetTotalUse()
-			if totalUse > gp.reserveSize*gp.scaleOption.DesireMaxStream {
-				deltaConn := (totalUse - gp.reserveSize*gp.scaleOption.DesireMaxStream) / (gp.scaleOption.DesireMaxStream / 2)
+			if totalUse > gp.poolSize*gp.scaleOption.DesireMaxStream {
+				deltaConn := (totalUse - gp.poolSize*gp.scaleOption.DesireMaxStream) / (gp.scaleOption.DesireMaxStream / 2)
 				gp.poolScaler(deltaConn)
 			}
 		}
@@ -161,8 +183,8 @@ func (gp *GrpcPool) poolScaler(deltaConn int) {
 		log.Errorf("deltaConn is %v, no need pool scaler", deltaConn)
 		return
 	}
-	if deltaConn+gp.reserveSize > gp.scaleOption.MaxConn {
-		deltaConn = gp.scaleOption.MaxConn - gp.reserveSize
+	if deltaConn+gp.poolSize > gp.scaleOption.MaxConn {
+		deltaConn = gp.scaleOption.MaxConn - gp.poolSize
 	}
 
 	if deltaConn == 0 {
@@ -172,23 +194,23 @@ func (gp *GrpcPool) poolScaler(deltaConn int) {
 	for i := 0; i < deltaConn; i++ {
 		conn, err := grpcDialWithTimeout(gp.target, gp.dialOptions...)
 		if err != nil {
-			log.Infof("grpc pool is scaler form %v to %v", gp.reserveSize, gp.reserveSize+i)
-			gp.reserveSize = gp.reserveSize + i
+			log.Infof("grpc pool is scaler form %v to %v", gp.poolSize, gp.poolSize+i)
+			gp.poolSize = gp.poolSize + i
 			log.Errorf("grpc dial target %v error %v", gp.target, err)
 			return
 		}
-		gp.conns[gp.reserveSize+i] = &GrpcConn{
+		gp.conns[gp.poolSize+i] = &GrpcConn{
 			conn:     conn,
 			inflight: 0,
 		}
 	}
-	log.Infof("grpc pool is scaler form %v to %v", gp.reserveSize, gp.reserveSize+deltaConn)
-	gp.reserveSize = gp.reserveSize + deltaConn
+	log.Infof("grpc pool is scaler form %v to %v", gp.poolSize, gp.poolSize+deltaConn)
+	gp.poolSize = gp.poolSize + deltaConn
 }
 
 func (gp *GrpcPool) GetTotalUse() int {
 	var totalUse int
-	for i := 0; i < gp.reserveSize; i++ {
+	for i := 0; i < gp.poolSize; i++ {
 		totalUse = totalUse + int(gp.conns[i].inflight)
 	}
 	return totalUse
@@ -204,7 +226,7 @@ func (gp *GrpcPool) GetGrpcPoolState() *GrpcPoolState {
 	}
 	return &GrpcPoolState{
 		ConnStates:  connStates,
-		ReserveSize: gp.reserveSize,
+		ReserveSize: gp.poolSize,
 		Target:      gp.target,
 		ScaleOption: ScaleOption{
 			Enable:          gp.scaleOption.Enable,
