@@ -26,6 +26,18 @@ type GrpcConn struct {
 	inflight int64
 }
 
+type GrpcPoolState struct {
+	ConnStates  []GrpcConnState
+	ReserveSize int
+	Target      string
+	ScaleOption ScaleOption
+}
+
+type GrpcConnState struct {
+	connState string
+	inflight  int64
+}
+
 type ScaleOption struct {
 	Enable          bool
 	ScalePeriod     time.Duration
@@ -180,4 +192,25 @@ func (gp *GrpcPool) GetTotalUse() int {
 		totalUse = totalUse + int(gp.conns[i].inflight)
 	}
 	return totalUse
+}
+
+func (gp *GrpcPool) GetGrpcPoolState() *GrpcPoolState {
+	connStates := make([]GrpcConnState, len(gp.conns))
+	for i, gconn := range gp.conns {
+		connStates[i] = GrpcConnState{
+			connState: gconn.conn.GetState().String(),
+			inflight:  gconn.inflight,
+		}
+	}
+	return &GrpcPoolState{
+		ConnStates:  connStates,
+		ReserveSize: gp.reserveSize,
+		Target:      gp.target,
+		ScaleOption: ScaleOption{
+			Enable:          gp.scaleOption.Enable,
+			ScalePeriod:     gp.scaleOption.ScalePeriod,
+			MaxConn:         gp.scaleOption.MaxConn,
+			DesireMaxStream: gp.scaleOption.DesireMaxStream,
+		},
+	}
 }

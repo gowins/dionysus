@@ -192,6 +192,7 @@ func TestPoolScaler(t *testing.T) {
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
+	fmt.Printf("get pool state %v\n", gPool.GetGrpcPoolState())
 
 	time.Sleep(25 * time.Second)
 }
