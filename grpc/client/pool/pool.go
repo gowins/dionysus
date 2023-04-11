@@ -156,7 +156,7 @@ func (gp *GrpcPool) pickLeastConn() *GrpcConn {
 	if grpcConn.conn.GetState() != connectivity.Ready {
 		for i := 0; i < gp.poolSize; i++ {
 			if gp.conns[(int(minIndex)+i)%gp.poolSize].conn.GetState() == connectivity.Ready {
-				return gp.conns[(int(minIndex)+1)%gp.poolSize]
+				return gp.conns[(int(minIndex)+i)%gp.poolSize]
 			}
 		}
 	}
