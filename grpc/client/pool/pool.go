@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -82,7 +83,6 @@ func (gp *GrpcPool) NewStream(ctx context.Context, desc *grpc.StreamDesc, method
 	return grpcConn.conn.NewStream(ctx, desc, method, opts...)
 }
 
-// TODO make sure grpc conn state
 func (gp *GrpcPool) pickLeastConn() *GrpcConn {
 	gp.Lock()
 	randIndex1 := gp.rand.Uint32()
@@ -101,7 +101,17 @@ func (gp *GrpcPool) pickLeastConn() *GrpcConn {
 		minInflight = gp.conns[int(randIndex3)%gp.reserveSize].inflight
 		minIndex = randIndex3
 	}
-	return gp.conns[int(minIndex)%gp.reserveSize]
+	grpcConn := gp.conns[int(minIndex)%gp.reserveSize]
+
+	// if conn is not ready, choose a next ready conn
+	if grpcConn.conn.GetState() != connectivity.Ready {
+		for i := 0; i < gp.reserveSize; i++ {
+			if gp.conns[(int(minIndex)+i)%gp.reserveSize].conn.GetState() == connectivity.Ready {
+				return gp.conns[(int(minIndex)+1)%gp.reserveSize]
+			}
+		}
+	}
+	return grpcConn
 }
 
 func (gp *GrpcPool) autoScalerRun() {
