@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/keepalive"
 	"net"
 	"testing"
 	"time"
@@ -17,7 +17,7 @@ func TestInitGrpcPool(t *testing.T) {
 	size := 10
 	testGrpcPool := &GrpcPool{
 		conns:       make([]*GrpcConn, size),
-		ReserveSize: size,
+		reserveSize: size,
 		Locker:      new(sync.Mutex),
 		rand:        rand.New(rand.NewSource(time.Now().Unix())),
 	}
@@ -54,7 +54,7 @@ type testgserver struct {
 
 // SayHello1 implements helloworld.GreeterServer
 func (s *testgserver) SayHelloTest1(ctx context.Context, in *testpb.HelloRequest) (*testpb.HelloReply, error) {
-	time.Sleep(time.Hour)
+	time.Sleep(time.Minute * 5)
 	return &testpb.HelloReply{Message: "Hello Test1" + in.GetName()}, nil
 }
 
@@ -73,7 +73,11 @@ func setupTestServer(serverDone chan struct{}, addr string) {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	s := grpc.NewServer()
+	testEnforcementPolicy := keepalive.EnforcementPolicy{
+		MinTime:             5 * time.Second, // If a client pings more than once every 5 seconds, terminate the connection
+		PermitWithoutStream: true,            // Allow pings even when there are no active streams
+	}
+	s := grpc.NewServer(grpc.KeepaliveEnforcementPolicy(testEnforcementPolicy))
 	testpb.RegisterGreeterServer(s, &testgserver{})
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -90,8 +94,7 @@ func TestPoolScaler(t *testing.T) {
 	go func() {
 		setupTestServer(serverDone, addr)
 	}()
-	gPool, err := InitGrpcPool(addr, 3,
-		grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	gPool, err := InitGrpcPool(addr, WithScaleOption(DefaultScaleOption))
 	if err != nil {
 		t.Errorf("grpc pool init dial error %v\n", err)
 		return
@@ -117,10 +120,8 @@ func TestPoolScalerAdd(t *testing.T) {
 	go func() {
 		setupTestServer(serverDone, addr)
 	}()
-	AutoScaler = true
-	AutoScalePeriod = time.Second * 10
-	gPool, err := InitGrpcPool(addr, 30,
-		grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	DefaultScaleOption.ScalePeriod = 10 * time.Second
+	gPool, err := InitGrpcPool(addr, WithScaleOption(DefaultScaleOption), WithReserveSize(30))
 	if err != nil {
 		t.Errorf("grpc pool init dial error %v", err)
 		return
@@ -128,11 +129,11 @@ func TestPoolScalerAdd(t *testing.T) {
 	go func() {
 		for {
 			totalUse := 0
-			for i := 0; i < gPool.ReserveSize; i++ {
+			for i := 0; i < gPool.reserveSize; i++ {
 				totalUse = totalUse + int(gPool.conns[i].inflight)
 				fmt.Printf("%v conn inflight is %v\n", i, gPool.conns[i].inflight)
 			}
-			fmt.Printf("reserveSize is %v, totalUse is %v\n", gPool.ReserveSize, totalUse)
+			fmt.Printf("reserveSize is %v, totalUse is %v\n", gPool.reserveSize, totalUse)
 			time.Sleep(3 * time.Second)
 		}
 	}()
@@ -148,8 +149,9 @@ func TestPoolScalerAdd(t *testing.T) {
 				fmt.Printf("Greeting: %s\n", r.GetMessage())
 			}()
 		}
-		time.Sleep(10 * time.Second)
+		time.Sleep(10 * time.Millisecond)
 	}
 
+	time.Sleep(3 * time.Minute)
 	close(serverDone)
 }
