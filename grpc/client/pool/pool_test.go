@@ -62,7 +62,7 @@ func TestPoolScalerMax(t *testing.T) {
 		setupTestServer(serverDone, addr)
 	}()
 	DefaultScaleOption.ScalePeriod = 5 * time.Second
-	gPool, err := GetGrpcPool(addr, WithScaleOption(DefaultScaleOption), WithReserveSize(30))
+	gPool, err := GetGrpcPool(addr, WithScaleOption(DefaultScaleOption), WithPoolSize(30))
 	if err != nil {
 		t.Errorf("grpc pool init dial error %v", err)
 		return
@@ -98,7 +98,7 @@ func TestPoolWithoutScaler(t *testing.T) {
 	go func() {
 		setupTestServer(serverDone, addr)
 	}()
-	gPool, err := GetGrpcPool(addr, WithReserveSize(18), WithDialOptions([]grpc.DialOption{
+	gPool, err := GetGrpcPool(addr, WithPoolSize(18), WithDialOptions([]grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
@@ -176,7 +176,7 @@ func TestPoolScaler(t *testing.T) {
 	}()
 	DefaultScaleOption.ScalePeriod = 5 * time.Second
 	for i := 0; i < 30; i++ {
-		gPool, err := GetGrpcPool(addr, WithScaleOption(DefaultScaleOption), WithReserveSize(30))
+		gPool, err := GetGrpcPool(addr, WithScaleOption(DefaultScaleOption), WithPoolSize(30))
 		if err != nil {
 			t.Errorf("grpc pool init dial error %v", err)
 			return
@@ -206,7 +206,7 @@ func TestGrpcPool_Closed(t *testing.T) {
 		setupTestServer(serverDone, addr)
 	}()
 	DefaultScaleOption.ScalePeriod = 5 * time.Second
-	gPool, err := GetGrpcPool(addr, WithScaleOption(DefaultScaleOption), WithReserveSize(30))
+	gPool, err := GetGrpcPool(addr, WithScaleOption(DefaultScaleOption), WithPoolSize(30))
 	if err != nil {
 		t.Errorf("grpc pool init dial error %v", err)
 		return

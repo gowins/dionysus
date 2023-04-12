@@ -10,9 +10,9 @@ import (
 
 type Option func(*GrpcPool)
 
-func WithReserveSize(reserveSize int) Option {
+func WithPoolSize(poolSize int) Option {
 	return func(pool *GrpcPool) {
-		pool.poolSize = reserveSize
+		pool.poolSize = poolSize
 	}
 }
 
