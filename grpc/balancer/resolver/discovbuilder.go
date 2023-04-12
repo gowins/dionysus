@@ -67,9 +67,9 @@ func (d *discovBuilder) getAddrs(endpoint string) []resolver.Address {
 func (d *discovBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	// target.Authority得到注册中心的地址
 	// 当然也可以直接通过全局变量[registry.Default]获取注册中心, 然后进行判断
-	var r = registry.Get(target.Authority)
+	var r = registry.Get(target.URL.Host)
 	if r == nil {
-		return nil, fmt.Errorf("registry %s not exists\n", target.Authority)
+		return nil, fmt.Errorf("registry %s not exists\n", target.URL.Host)
 	}
 
 	// target.Endpoint是服务的名字, 是项目启动的时候注册中心中注册的项目名字
