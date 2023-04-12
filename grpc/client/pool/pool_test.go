@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 	"net"
@@ -195,4 +196,44 @@ func TestPoolScaler(t *testing.T) {
 	}
 
 	time.Sleep(25 * time.Second)
+}
+
+func TestGrpcPool_Closed(t *testing.T) {
+	addr := "127.0.0.1:8820"
+	serverDone := make(chan struct{})
+	defer close(serverDone)
+	go func() {
+		setupTestServer(serverDone, addr)
+	}()
+	DefaultScaleOption.ScalePeriod = 5 * time.Second
+	gPool, err := GetGrpcPool(addr, WithScaleOption(DefaultScaleOption), WithReserveSize(30))
+	if err != nil {
+		t.Errorf("grpc pool init dial error %v", err)
+		return
+	}
+	c := testpb.NewGreeterClient(gPool)
+	for j := 0; j < 10; j++ {
+		rsp, err := c.SayHelloTest2(context.Background(), &testpb.HelloRequest{Name: "nameing1"})
+		if err != nil || rsp.Message != "Hello Test2nameing1" {
+			t.Errorf("get rsp failed")
+			return
+		}
+	}
+	gPool.Closed()
+	if gPool.isClosed != true {
+		t.Errorf("grpc pool is closed, want isClosed is true")
+		return
+	}
+	for i := 0; i < gPool.poolSize; i++ {
+		if gPool.conns[i].conn.GetState() != connectivity.Shutdown {
+			t.Errorf("grpc pool is closed, want conn state is Shutdown, get %v", gPool.conns[i].conn.GetState())
+			return
+		}
+	}
+	for j := 0; j < 10; j++ {
+		_, err := c.SayHelloTest2(context.Background(), &testpb.HelloRequest{Name: "nameing1"})
+		if err == nil {
+			t.Errorf("grpc pool is closed, want error not nil")
+		}
+	}
 }

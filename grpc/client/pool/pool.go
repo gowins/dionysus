@@ -19,6 +19,8 @@ type GrpcPool struct {
 	rand        *rand.Rand
 	scaleOption *ScaleOption
 	sync.Locker
+	stateUpdate sync.Locker
+	isClosed    bool
 }
 
 type GrpcConn struct {
@@ -31,6 +33,7 @@ type GrpcPoolState struct {
 	ReserveSize int
 	Target      string
 	ScaleOption ScaleOption
+	IsClosed    bool
 }
 
 type GrpcConnState struct {
@@ -54,6 +57,7 @@ func InitGrpcPool(target string, opts ...Option) (*GrpcPool, error) {
 		dialOptions: DefaultDialOpts,
 		target:      target,
 		Locker:      new(sync.Mutex),
+		stateUpdate: new(sync.Mutex),
 		rand:        rand.New(rand.NewSource(time.Now().Unix())),
 		scaleOption: &ScaleOption{Enable: false, MaxConn: defaultPoolSize},
 	}
@@ -179,6 +183,12 @@ func (gp *GrpcPool) autoScalerRun() {
 }
 
 func (gp *GrpcPool) poolScaler(deltaConn int) {
+	gp.stateUpdate.Lock()
+	defer gp.stateUpdate.Unlock()
+	if gp.isClosed {
+		log.Infof("grpc pool is closed, will not scale")
+		return
+	}
 	if deltaConn+gp.poolSize > gp.scaleOption.MaxConn {
 		deltaConn = gp.scaleOption.MaxConn - gp.poolSize
 	}
@@ -226,11 +236,23 @@ func (gp *GrpcPool) GetGrpcPoolState() *GrpcPoolState {
 		ConnStates:  connStates,
 		ReserveSize: gp.poolSize,
 		Target:      gp.target,
+		IsClosed:    gp.isClosed,
 		ScaleOption: ScaleOption{
 			Enable:          gp.scaleOption.Enable,
 			ScalePeriod:     gp.scaleOption.ScalePeriod,
 			MaxConn:         gp.scaleOption.MaxConn,
 			DesireMaxStream: gp.scaleOption.DesireMaxStream,
 		},
+	}
+}
+
+func (gp *GrpcPool) Closed() {
+	gp.isClosed = true
+	gp.stateUpdate.Lock()
+	defer gp.stateUpdate.Unlock()
+	for i := 0; i < gp.poolSize; i++ {
+		if err := gp.conns[i].conn.Close(); err != nil {
+			log.Errorf("grpc conn close error %v", err)
+		}
 	}
 }
