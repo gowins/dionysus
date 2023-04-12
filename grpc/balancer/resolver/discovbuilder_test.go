@@ -1,6 +1,7 @@
 package resolver
 
 import (
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -13,7 +14,7 @@ import (
 	"github.com/gowins/dionysus/grpc/registry/etcdv3"
 )
 
-const rawUrl = "etcdv3://etcd.wpt:2379"
+const rawUrl = "etcdv3://etcd.sf:2379"
 
 var discover bool
 
@@ -32,7 +33,7 @@ func TestDiscovBuilder(t *testing.T) {
 
 	// 未初始化registry
 	cc := new(mockedClientConn)
-	res, err := b.Build(resolver.Target{Scheme: DiscovScheme, Authority: "wpt.etcd", Endpoint: "service_name"}, cc, resolver.BuildOptions{})
+	res, err := b.Build(resolver.Target{URL: url.URL{Path: "service_name", Host: "sf.etcd", Scheme: "DiscovScheme"}}, cc, resolver.BuildOptions{})
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
 
@@ -52,7 +53,7 @@ func TestDiscovBuilder(t *testing.T) {
 
 	// 初始化registry, 服务不存在
 	cc = new(mockedClientConn)
-	res, err = b.Build(resolver.Target{Scheme: DiscovScheme, Authority: etcdv3.Name, Endpoint: name}, cc, resolver.BuildOptions{})
+	res, err = b.Build(resolver.Target{URL: url.URL{Path: name, Host: etcdv3.Name, Scheme: DiscovScheme}}, cc, resolver.BuildOptions{})
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
 	assert.NotNil(t, cc.state)
@@ -75,7 +76,7 @@ func TestDiscovBuilder(t *testing.T) {
 	assert.Equal(t, len(services[0].Nodes), 1)
 
 	cc = new(mockedClientConn)
-	res, err = b.Build(resolver.Target{Scheme: DiscovScheme, Authority: etcdv3.Name, Endpoint: name}, cc, resolver.BuildOptions{})
+	res, err = b.Build(resolver.Target{URL: url.URL{Path: name, Host: etcdv3.Name, Scheme: DiscovScheme}}, cc, resolver.BuildOptions{})
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.NotNil(t, cc.state)
@@ -139,7 +140,7 @@ func TestGetAddrs(t *testing.T) {
 
 	ccFoo := new(mockedClientConn)
 
-	res, err := b.Build(resolver.Target{Scheme: DiscovScheme, Authority: etcdv3.Name, Endpoint: srvFoo}, ccFoo, resolver.BuildOptions{})
+	res, err := b.Build(resolver.Target{URL: url.URL{Path: srvFoo, Host: etcdv3.Name, Scheme: DiscovScheme}}, ccFoo, resolver.BuildOptions{})
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.NotNil(t, ccFoo.state)
@@ -149,7 +150,7 @@ func TestGetAddrs(t *testing.T) {
 	}
 
 	ccBar := new(mockedClientConn)
-	res, err = b.Build(resolver.Target{Scheme: DiscovScheme, Authority: etcdv3.Name, Endpoint: srvBar}, ccBar, resolver.BuildOptions{})
+	res, err = b.Build(resolver.Target{URL: url.URL{Path: srvBar, Host: etcdv3.Name, Scheme: DiscovScheme}}, ccBar, resolver.BuildOptions{})
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.NotNil(t, ccBar.state)
