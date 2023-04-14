@@ -41,7 +41,7 @@ func TestSetup(t *testing.T) {
 	time.Sleep(time.Second * 20)
 	for index, res := range expectRes {
 		if res != getRes[index] {
-			t.Errorf("want string %v, get string %v", res, getRes[index])
+			t.Errorf("want string %v, get string %v ", res, getRes[index])
 			return
 		}
 	}
