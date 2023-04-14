@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -32,7 +33,7 @@ func TestDirectBuilder_Build(t *testing.T) {
 
 			var b directBuilder
 			cc := new(mockedClientConn)
-			_, err := b.Build(resolver.Target{Scheme: DirectScheme, Endpoint: strings.Join(servers, ",")}, cc, resolver.BuildOptions{})
+			_, err := b.Build(resolver.Target{URL: url.URL{Scheme: DirectScheme, Path: strings.Join(servers, ",")}}, cc, resolver.BuildOptions{})
 			if test == 0 {
 				assert.NotNil(t, err)
 			} else {

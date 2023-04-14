@@ -67,14 +67,14 @@ func (d *discovBuilder) getAddrs(endpoint string) []resolver.Address {
 func (d *discovBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	// target.Authority得到注册中心的地址
 	// 当然也可以直接通过全局变量[registry.Default]获取注册中心, 然后进行判断
-	var r = registry.Get(target.Authority)
+	var r = registry.Get(target.URL.Host)
 	if r == nil {
-		return nil, fmt.Errorf("registry %s not exists\n", target.Authority)
+		return nil, fmt.Errorf("registry %s not exists\n", target.URL.Host)
 	}
 
 	// target.Endpoint是服务的名字, 是项目启动的时候注册中心中注册的项目名字
 	// GetService根据服务名字获取注册中心该项目所有服务
-	services, err := r.GetService(target.Endpoint)
+	services, err := r.GetService(target.Endpoint())
 	if err != nil {
 		return nil, errors.Wrap(err, "registry GetService error\n")
 	}
@@ -82,7 +82,7 @@ func (d *discovBuilder) Build(target resolver.Target, cc resolver.ClientConn, op
 	// 启动后，更新服务地址
 	d.updateService(services...)
 
-	var addrs = d.getAddrs(target.Endpoint)
+	var addrs = d.getAddrs(target.Endpoint())
 
 	if len(addrs) == 0 {
 		return nil, fmt.Errorf("service none available")
@@ -90,9 +90,9 @@ func (d *discovBuilder) Build(target resolver.Target, cc resolver.ClientConn, op
 
 	cc.UpdateState(resolver.State{Addresses: addrs})
 
-	w, err := r.Watch(registry.WatchService(target.Endpoint))
+	w, err := r.Watch(registry.WatchService(target.Endpoint()))
 	if err != nil {
-		return nil, errors.Wrapf(err, "target.Endpoint:%s\n", target.Endpoint)
+		return nil, errors.Wrapf(err, "target.Endpoint:%s\n", target.Endpoint())
 	}
 
 	go func() {
@@ -115,7 +115,7 @@ func (d *discovBuilder) Build(target resolver.Target, cc resolver.ClientConn, op
 				d.updateService(res.Service)
 			}
 
-			cc.UpdateState(resolver.State{Addresses: d.getAddrs(target.Endpoint)})
+			cc.UpdateState(resolver.State{Addresses: d.getAddrs(target.Endpoint())})
 		}
 	}()
 
