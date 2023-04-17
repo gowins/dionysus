@@ -53,8 +53,8 @@ func (p *hashPicker) Pick(pickInfo balancer.PickInfo) (balancer.PickResult, erro
 	var sc balancer.SubConn
 	subConnsLen := uint32(len(p.subConns))
 	md, ok := metadata.FromOutgoingContext(pickInfo.Ctx)
-	if ok && len(md.Get(BalancerHashKey)) != 0 {
-		hashStrings := md.Get(BalancerHashKey)
+	hashStrings := md.Get(BalancerHashKey)
+	if ok && len(hashStrings) != 0 && hashStrings[0] != "" {
 		hashString := strings.Join(hashStrings, ",")
 		var hash32 = fnv.New32a()
 		_, err := hash32.Write([]byte(hashString))
