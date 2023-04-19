@@ -35,13 +35,13 @@ func New(service string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 }
 
 func NewConnWithTracer(service string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	opts = append(opts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+	opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
 		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	return New(service, opts...)
 }
 
 func GetConnWithTracer(service string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	opts = append(opts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+	opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
 		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	return Get(service, opts...)
 }
