@@ -50,6 +50,7 @@ require (
 	gorm.io/driver/mysql v1.4.3
 	gorm.io/gen v0.3.18
 	gorm.io/gorm v1.24.0
+	gorm.io/plugin/opentelemetry v0.1.1
 )
 
 require (
@@ -131,7 +132,7 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/automaxprocs v1.5.1 // indirect
-	go.uber.org/multierr v1.8.0 // indirect
+	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20221005025214-4161e89ecf1b // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.9.0 // indirect

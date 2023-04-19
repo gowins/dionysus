@@ -16,9 +16,11 @@ import (
 	"github.com/gowins/dionysus/orm"
 	"github.com/gowins/dionysus/step"
 	kafkago "github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
+	"gorm.io/plugin/opentelemetry/tracing"
 	"io"
 	"net/http"
 	"time"
@@ -172,22 +174,12 @@ func kafkaWithTrace(ctx context.Context) {
 }
 
 func ormWithTrace(ctx context.Context) {
-	// 如果ctx有span，那么spanDB会以old span为parent，反之则spanDB为root span
-	_, spanDB := otm.SpanStart(ctx, "ormGet", oteltrace.WithSpanKind(oteltrace.SpanKindClient),
-		oteltrace.WithAttributes(attribute.String("db.system", "msyql")))
-	if spanDB == nil {
-		log.Errorf("trace is not init")
-		return
-	}
-	// 新创建到span必须关闭
-	defer spanDB.End()
 	ormDB := orm.GetDB("demoDB")
-	_, ok := ormDB.Get("demoKey")
-	if !ok {
-		spanDB.SetStatus(codes.Error, fmt.Sprintf("can get demoKey from orm"))
-	} else {
-		spanDB.AddEvent("ormGet", oteltrace.WithAttributes(
-			attribute.KeyValue{Key: "ormGet", Value: attribute.StringValue("demoKey")}))
+	if otm.TracerIsEnable() {
+		err := ormDB.Use(tracing.NewPlugin(tracing.WithoutMetrics(), tracing.WithTracerProvider(otel.GetTracerProvider())))
+		if err != nil {
+			log.Fatalf("gorm db init tracer failed %s", err.Error())
+		}
 	}
 }
 
