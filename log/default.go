@@ -55,7 +55,7 @@ func Setup(opts ...Option) {
 	Noticef = defaultLogger.Noticef
 	WithField = defaultLogger.WithField
 	WithFields = defaultLogger.WithFields
-
+	WithTraceId = defaultLogger.WithTraceId
 }
 
 func SetProjectName(pname string) Option {
