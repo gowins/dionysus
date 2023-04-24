@@ -1,7 +1,9 @@
 package log
 
 import (
+	"context"
 	"fmt"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -232,6 +234,14 @@ func (zl *zLogger) WithFields(fields map[string]interface{}) Logger {
 	}
 
 	return zl.clone(zfields...)
+}
+
+func (zl *zLogger) WithTraceId(ctx context.Context) Logger {
+	traceid := oteltrace.SpanContextFromContext(ctx).TraceID().String()
+	if traceid == "" {
+		return zl
+	}
+	return zl.clone(zapcore.Field{Key: "traceId", Type: zapcore.ReflectType, Interface: traceid})
 }
 
 func (zl *zLogger) SetLogLevel(lv Level) error {
