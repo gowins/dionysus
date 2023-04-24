@@ -7,7 +7,6 @@ import (
 
 	otm "github.com/gowins/dionysus/opentelemetry"
 	"github.com/gowins/dionysus/recovery"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/channelz/service"
@@ -97,8 +96,8 @@ func (g *grpcServer) Init(opts ...grpc.ServerOption) (gErr error) {
 		g.streamInterceptors = append([]grpc.StreamServerInterceptor{otm.GrpcStreamTraceInterceptor()}, g.streamInterceptors...)
 	}
 
-	opts1 = append(opts1, grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(g.unaryInterceptors...)),
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(g.streamInterceptors...)))
+	opts1 = append(opts1, grpc.ChainUnaryInterceptor(g.unaryInterceptors...),
+		grpc.ChainStreamInterceptor(g.streamInterceptors...))
 
 	g.srv = grpc.NewServer(append(opts1, opts...)...)
 
