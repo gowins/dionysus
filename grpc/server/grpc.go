@@ -133,6 +133,14 @@ func (g *grpcServer) Start() (gErr error) {
 }
 
 func (g *grpcServer) Stop() error {
-	g.srv.GracefulStop()
+	if g.Cfg.ForceStop {
+		log.Infof("grpc server start stop")
+		g.srv.Stop()
+		log.Infof("grpc server stop success")
+	} else {
+		log.Infof("grpc server start GracefulStop")
+		g.srv.GracefulStop()
+		log.Infof("grpc server GracefulStop success")
+	}
 	return nil
 }

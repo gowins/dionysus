@@ -12,6 +12,7 @@ type Cfg struct {
 	MaxMsgSize int
 	TlsCfg     *tls.Config
 	Address    string
+	ForceStop  bool
 }
 
 const (
