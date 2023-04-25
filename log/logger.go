@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"fmt"
 )
 
@@ -31,6 +32,8 @@ type Logger interface {
 
 	WithField(key string, value interface{}) Logger
 	WithFields(fields map[string]interface{}) Logger
+
+	WithTraceId(ctx context.Context) Logger
 
 	SetLogLevel(level Level) error
 

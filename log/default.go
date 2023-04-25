@@ -1,5 +1,7 @@
 package log
 
+import "context"
+
 var (
 	defaultLogger Logger
 	projectName   string
@@ -16,8 +18,9 @@ var (
 	Noticef       func(format string, args ...interface{})
 	Debugf        func(format string, args ...interface{})
 
-	WithField  func(key string, value interface{}) Logger
-	WithFields func(fields map[string]interface{}) Logger
+	WithField   func(key string, value interface{}) Logger
+	WithFields  func(fields map[string]interface{}) Logger
+	WithTraceId func(ctx context.Context) Logger
 )
 
 // GetLogger return defaultLogger
@@ -52,7 +55,7 @@ func Setup(opts ...Option) {
 	Noticef = defaultLogger.Noticef
 	WithField = defaultLogger.WithField
 	WithFields = defaultLogger.WithFields
-
+	WithTraceId = defaultLogger.WithTraceId
 }
 
 func SetProjectName(pname string) Option {
