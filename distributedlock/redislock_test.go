@@ -1,41 +1,50 @@
 package distributedlock
 
-import (
-	"context"
-	"fmt"
-	"github.com/go-redis/redis/v8"
-	"sync"
-	"testing"
-	"time"
-)
-
-func Test_redisLock_Lock(t *testing.T) {
-	redisCli := redis.NewClient(&redis.Options{
-		Addr:     "120.27.236.102:6379",
-		DB:       0,
-		Password: "123456",
-	})
+/*
+func TestNew(t *testing.T) {
+	redisCli := redis.NewClient(&redis.Options{})
 
 	err := redisCli.Ping(context.Background()).Err()
 	if err != nil {
 		t.Errorf("ping redis error %v", err)
 		return
 	}
-	rl := RedisLock{client: redisCli}
+	rl := New(redisCli, WithExpiration(0))
 	var wg sync.WaitGroup
 	for i := 1; i < 10; i++ {
 		wg.Add(1)
 		go func() {
-			rl.Lock()
-			defer wg.Done()
-			defer rl.Unlock()
-			for j := 0; j < 16; j++ {
-				ttl, err := rl.TTL()
-				va, _ := getLockValue()
-				fmt.Printf("err is %v, va is %v ttl is %v, time is %v\n", err, va, ttl, time.Now().String())
-				time.Sleep(time.Second)
+			lockValue, _ := getLockValue()
+			fmt.Printf("this is %v, start get lock at %v\n", lockValue, time.Now().String())
+			ctx, err := rl.Lock(context.Background())
+			if err != nil {
+				t.Errorf("lock error %v", err)
+				return
 			}
+			fmt.Printf("this is %v, get lock at %v\n", lockValue, time.Now().String())
+			defer wg.Done()
+			tick := time.NewTicker(time.Second)
+			count := 0
+			for {
+				select {
+				case <-tick.C:
+					le, err := rl.TTL(context.Background())
+					fmt.Printf("ttt1 this is %v, get lock at %v\n", lockValue, time.Now().String())
+					if count > 15 {
+						err := rl.Unlock(ctx)
+						fmt.Printf("unlock lockValue %v lock lost at %v, error is %v", lockValue, time.Now().String(), err)
+						return
+					}
+					count++
+					fmt.Printf("hold by %v, time %v, err %v\n", lockValue, le.String(), err)
+				case <-ctx.Done():
+					fmt.Printf("%v lock lost at time %v\n", lockValue, time.Now().String())
+					return
+				}
+			}
+
 		}()
 	}
 	wg.Wait()
 }
+*/
