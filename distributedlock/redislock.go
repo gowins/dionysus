@@ -9,7 +9,6 @@ import (
 )
 
 var (
-	defaultLockKey    = "dioRedisLockKey"
 	defaultExpiration = 10 * time.Second
 	defaultRetryTTL   = time.Second
 	luaRefresh        = redis.NewScript(`if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("expire", KEYS[1], ARGV[2]) else return 0 end`)
@@ -85,7 +84,6 @@ func (rl *RedisLock) Lock(ctx context.Context) (context.Context, error) {
 		if rl.retryTTL <= 0 {
 			return ctx, fmt.Errorf("get lock failed")
 		}
-		//fmt.Printf("--------------get lock failed %v time %v---------------\n", lockValue, time.Now().String())
 		time.Sleep(rl.retryTTL)
 	}
 }
@@ -93,9 +91,9 @@ func (rl *RedisLock) Lock(ctx context.Context) (context.Context, error) {
 func (rl *RedisLock) Unlock(ctx context.Context) error {
 	lockValue, err := getLockValue()
 	if err != nil {
-		fmt.Printf("get lock value error %v", err)
+		return fmt.Errorf("get lock value error %v", err)
 	}
-	res, err := luaRelease.Run(ctx, rl.client, []string{defaultLockKey}, lockValue).Result()
+	res, err := luaRelease.Run(ctx, rl.client, []string{rl.lockKey}, lockValue).Result()
 	if err == redis.Nil {
 		return fmt.Errorf("release error redislock: lock not held")
 	} else if err != nil {
@@ -103,7 +101,7 @@ func (rl *RedisLock) Unlock(ctx context.Context) error {
 	}
 
 	if i, ok := res.(int64); !ok || i != 1 {
-		return fmt.Errorf("release error res value type")
+		return fmt.Errorf("release error res value type, ok is %v, i is %v", ok, i)
 	}
 	return nil
 }
@@ -112,16 +110,16 @@ func (rl *RedisLock) Unlock(ctx context.Context) error {
 func (rl *RedisLock) TTL(ctx context.Context) (time.Duration, error) {
 	lockValue, err := getLockValue()
 	if err != nil {
-		fmt.Printf("get lock value error %v", err)
+		return 0, fmt.Errorf("get lock value error %v", err)
 	}
-	res, err := luaPTTL.Run(ctx, rl.client, []string{defaultLockKey}, lockValue).Result()
+	res, err := luaPTTL.Run(ctx, rl.client, []string{rl.lockKey}, lockValue).Result()
 	if err == redis.Nil {
 		return 0, nil
 	} else if err != nil {
 		return 0, err
 	}
 
-	if num := res.(int64); num > 0 {
+	if num, ok := res.(int64); ok && num > 0 {
 		return time.Duration(num) * time.Millisecond, nil
 	}
 	return 0, nil
@@ -132,7 +130,7 @@ func (rl *RedisLock) watchDog(ctx context.Context, cancelFunc context.CancelFunc
 	for {
 		select {
 		case <-expTicker.C:
-			resp := luaRefresh.Run(ctx, rl.client, []string{rl.lockKey}, lockValue, rl.expiration/time.Second)
+			resp := luaRefresh.Run(ctx, rl.client, []string{rl.lockKey}, lockValue, rl.expiration.Seconds())
 			if result, err := resp.Result(); err != nil || result == int64(0) {
 				log.Infof("expire lock failed error %v, result %v", err, result)
 				cancelFunc()

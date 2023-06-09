@@ -9,75 +9,6 @@ import (
 	"github.com/go-redis/redismock/v8"
 )
 
-/*
-func TestNew(t *testing.T) {
-	redisCli := redis.NewClient(&redis.Options{})
-
-	err := redisCli.Ping(context.Background()).Err()
-	if err != nil {
-		t.Errorf("ping redis error %v", err)
-		return
-	}
-	rl := New(redisCli, WithExpiration(0))
-	var wg sync.WaitGroup
-	for i := 1; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			lockValue, _ := getLockValue()
-			fmt.Printf("this is %v, start get lock at %v\n", lockValue, time.Now().String())
-			ctx, err := rl.Lock(context.Background())
-			if err != nil {
-				t.Errorf("lock error %v", err)
-				return
-			}
-			fmt.Printf("this is %v, get lock at %v\n", lockValue, time.Now().String())
-			defer wg.Done()
-			tick := time.NewTicker(time.Second)
-			count := 0
-			for {
-				select {
-				case <-tick.C:
-					le, err := rl.TTL(context.Background())
-					fmt.Printf("ttt1 this is %v, get lock at %v\n", lockValue, time.Now().String())
-					if count > 15 {
-						err := rl.Unlock(ctx)
-						fmt.Printf("unlock lockValue %v lock lost at %v, error is %v", lockValue, time.Now().String(), err)
-						return
-					}
-					count++
-					fmt.Printf("hold by %v, time %v, err %v\n", lockValue, le.String(), err)
-				case <-ctx.Done():
-					fmt.Printf("%v lock lost at time %v\n", lockValue, time.Now().String())
-					return
-				}
-			}
-
-		}()
-	}
-	wg.Wait()
-}
-*/
-
-func TestNewMock(t *testing.T) {
-	db, mock := redismock.NewClientMock()
-	mock.MatchExpectationsInOrder(false)
-	mock.ExpectGet("1234").SetVal("ddd")
-	mock.ExpectSetNX("dsvsd", "wev", 0).SetVal(true)
-	mock.ExpectEvalSha("cf0e94b2e9ffc7e04395cf88f7583fc309985910", []string{defaultLockKey}, "lockValue").SetVal(1)
-	mock.ExpectEvalSha("cf0e94b2e9ffc7e04395cf88f7583fc309985910", []string{defaultLockKey}, "lockValue").SetErr(nil)
-
-	res, err := luaRelease.Run(context.Background(), db, []string{defaultLockKey}, "lockValue").Result()
-
-	mock.ClearExpect()
-	mock.ExpectEvalSha("cf0e94b2e9ffc7e04395cf88f7583fc309985910", []string{defaultLockKey}, "lockValue").SetVal(1)
-	mock.ExpectEvalSha("cf0e94b2e9ffc7e04395cf88f7583fc309985910", []string{defaultLockKey}, "lockValue").SetErr(nil)
-	//db.Set(context.Background(), "1234", "ddw", 0)
-	fmt.Printf("get redis value %v, err %v\n", res, err)
-	res, err = luaRelease.Run(context.Background(), db, []string{defaultLockKey}, "lockValue").Result()
-	//db.Set(context.Background(), "1234", "ddw", 0)
-	fmt.Printf("11get redis value %v, err %v\n", res, err)
-}
-
 func TestNew(t *testing.T) {
 	lockKey := "testLockKet"
 	testExpiration := 11 * time.Second
@@ -94,6 +25,133 @@ func TestNew(t *testing.T) {
 	}
 	if rlock.retryTTL != testRetryTTL {
 		t.Errorf("want retryTTL %v, get retryTTL %v", testRetryTTL, rlock.retryTTL)
+		return
+	}
+}
+
+func TestRedisLock_Lock(t *testing.T) {
+	testLock1 := "testKey1111"
+	testLock2 := "testKey2222"
+	db, mock := redismock.NewClientMock()
+	mock.MatchExpectationsInOrder(false)
+	rlock := New(db, testLock1, WithExpiration(0), WithRetryTTL(0))
+	va, err := getLockValue()
+	if err != nil {
+		t.Errorf("want get lock value want error nil, get %v", err)
+		return
+	}
+	mock.ExpectSetNX(testLock1, va, 0).SetVal(true)
+	_, err = rlock.Lock(context.Background())
+	if err != nil {
+		t.Errorf("1st get lock want error nil, get %v", err)
+		return
+	}
+
+	mock.ClearExpect()
+	mock.ExpectSetNX(testLock1, va, 0).SetVal(false)
+	_, err = rlock.Lock(context.Background())
+	if err == nil {
+		t.Errorf("2nd get lock want error not nil, get nil")
+		return
+	}
+
+	mock.ClearExpect()
+	mock.ExpectSetNX(testLock1, va, 0).SetErr(fmt.Errorf("redis error"))
+	rlock2 := New(db, testLock2, WithExpiration(0), WithRetryTTL(0))
+	_, err = rlock2.Lock(context.Background())
+	if err == nil {
+		t.Errorf("2nd get lock want error not nil, get nil")
+		return
+	}
+}
+
+func TestWithWatchDog(t *testing.T) {
+	expiration := 10 * time.Second
+	va, err := getLockValue()
+	if err != nil {
+		t.Errorf("want get lock value want error nil, get %v", err)
+		return
+	}
+	testLockKey := "testKeyWD"
+	db, mock := redismock.NewClientMock()
+	mock.MatchExpectationsInOrder(false)
+	mock.ExpectSetNX(testLockKey, va, expiration).SetVal(true)
+	mock.ExpectEvalSha("a2c2e4c111924caec00216d4881ed37a644435ce", []string{testLockKey}, va, expiration.Seconds()).SetVal(1)
+	mock.ExpectEvalSha("a2c2e4c111924caec00216d4881ed37a644435ce", []string{testLockKey}, va, expiration.Seconds()).SetErr(nil)
+	rlock := New(db, testLockKey, WithExpiration(expiration))
+	timeStart := time.Now()
+	ctx, err := rlock.Lock(context.Background())
+	if err != nil {
+		t.Errorf("want lock error nil, get %v", err)
+		return
+	}
+
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	select {
+	case <-ctxTimeout.Done():
+		t.Errorf("want not timeout")
+	case <-ctx.Done():
+		fmt.Printf("time now is %v, time start is %v, sub %v", time.Now().String(), timeStart.String(), time.Now().Sub(timeStart).Seconds())
+		if time.Now().Sub(timeStart).Seconds() < 13 {
+			t.Errorf("want failed at 2nd")
+		}
+	}
+}
+
+func TestRedisLock_Unlock(t *testing.T) {
+	testLock1 := "testKeyUnlock"
+	db, mock := redismock.NewClientMock()
+	mock.MatchExpectationsInOrder(false)
+	rlock := New(db, testLock1, WithExpiration(0), WithRetryTTL(0))
+	va, err := getLockValue()
+	if err != nil {
+		t.Errorf("want get lock value want error nil, get %v", err)
+		return
+	}
+	mock.ExpectSetNX(testLock1, va, 0).SetVal(true)
+	_, err = rlock.Lock(context.Background())
+	if err != nil {
+		t.Errorf("1st get lock want error nil, get %v", err)
+		return
+	}
+
+	mock.ClearExpect()
+	mock.ExpectEvalSha("cf0e94b2e9ffc7e04395cf88f7583fc309985910", []string{testLock1}, va).SetVal(int64(1))
+	mock.ExpectEvalSha("cf0e94b2e9ffc7e04395cf88f7583fc309985910", []string{testLock1}, va).SetErr(nil)
+	err = rlock.Unlock(context.Background())
+	if err != nil {
+		t.Errorf("want error nil, get error %v", err)
+		return
+	}
+
+	err = rlock.Unlock(context.Background())
+	if err == nil {
+		t.Errorf("want error, but get error nil")
+	}
+}
+
+func TestRedisLock_TTL(t *testing.T) {
+	testLock1 := "testKeyTTL"
+	db, mock := redismock.NewClientMock()
+	mock.MatchExpectationsInOrder(false)
+	rlock := New(db, testLock1, WithExpiration(0), WithRetryTTL(0))
+	va, err := getLockValue()
+	if err != nil {
+		t.Errorf("want get lock value want error nil, get %v", err)
+		return
+	}
+	_, err = rlock.TTL(context.Background())
+	if err == nil {
+		t.Errorf("want get ttl error not nil")
+		return
+	}
+	mock.ExpectEvalSha("6484da7d58920897fdc22b7f9afd1a3d47524ea8", []string{testLock1}, va).SetVal(1000)
+	mock.ExpectEvalSha("6484da7d58920897fdc22b7f9afd1a3d47524ea8", []string{testLock1}, va).SetErr(nil)
+	_, err = rlock.TTL(context.Background())
+	if err != nil {
+		t.Errorf("want get ttl error nil, get error %v", err)
 		return
 	}
 }
