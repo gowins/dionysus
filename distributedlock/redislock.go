@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	defaultExpiration = 10 * time.Second
+	defaultExpiration = 0 * time.Second
 	defaultRetryTTL   = time.Second
 	luaRefresh        = redis.NewScript(`if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("expire", KEYS[1], ARGV[2]) else return 0 end`)
 	luaRelease        = redis.NewScript(`if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end`)
@@ -50,7 +50,7 @@ func New(rclient *redis.Client, lockKey string, opts ...Option) *RedisLock {
 		lockKey:        lockKey,
 		expiration:     defaultExpiration,
 		retryTTL:       defaultRetryTTL,
-		watchDogEnable: true,
+		watchDogEnable: false,
 	}
 	for _, opt := range opts {
 		opt(redisLock)
@@ -72,7 +72,6 @@ func (rl *RedisLock) Lock(ctx context.Context) (context.Context, error) {
 		}
 		if ok {
 			log.Infof("get lock success %v time %v", lockValue, time.Now().String())
-			//rl.watchDogEnable = false
 			if rl.watchDogEnable && rl.expiration > 3*time.Second {
 				nctx, cancelFunc := context.WithCancel(ctx)
 				go rl.watchDog(nctx, cancelFunc, lockValue)
@@ -140,4 +139,20 @@ func (rl *RedisLock) watchDog(ctx context.Context, cancelFunc context.CancelFunc
 			log.Infof(" lock cancel")
 		}
 	}
+}
+
+func (rl *RedisLock) ClearForce(ctx context.Context) (int64, error) {
+	return rl.client.Del(ctx, rl.lockKey).Result()
+}
+
+func (rl *RedisLock) GetLockIdAndTTL(ctx context.Context) (string, time.Duration, error) {
+	lockid, err := rl.client.Get(ctx, rl.lockKey).Result()
+	if err != nil {
+		return "", 0, err
+	}
+	ttl, err := rl.client.TTL(ctx, rl.lockKey).Result()
+	if err != nil {
+		return "", 0, err
+	}
+	return lockid, ttl, nil
 }
