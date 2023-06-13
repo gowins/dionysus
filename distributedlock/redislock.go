@@ -131,7 +131,7 @@ func (rl *RedisLock) watchDog(ctx context.Context, cancelFunc context.CancelFunc
 		case <-expTicker.C:
 			resp := luaRefresh.Run(ctx, rl.client, []string{rl.lockKey}, lockValue, rl.expiration.Seconds())
 			if result, err := resp.Result(); err != nil || result == int64(0) {
-				log.Infof("expire lock failed error %v, result %v", err, result)
+				log.Infof("expire lock failed error %v, result %v, lockid %v", err, result, lockValue)
 				cancelFunc()
 				return
 			}
