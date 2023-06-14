@@ -15,7 +15,7 @@ func TestNew(t *testing.T) {
 	testRetryTTL := 2 * time.Second
 	testRefresh := 8 * time.Second
 	db, _ := redismock.NewClientMock()
-	rlock := New(db, lockKey, WithExpiration(testExpiration), WithRetryPeriod(testRetryTTL), WithWatchDog(testRefresh))
+	rlock := New(db, lockKey, WithExpiration(testExpiration), WithRetryPeriod(testRetryTTL), WithWatchDog(testRefresh), WithDetailLog(true))
 	if rlock.refreshPeriod != testRefresh {
 		t.Errorf("want watchDogEnable false get true")
 		return
@@ -35,8 +35,8 @@ func TestRedisLock_Lock(t *testing.T) {
 	testLock2 := "testKey2222"
 	db, mock := redismock.NewClientMock()
 	mock.MatchExpectationsInOrder(false)
-	rlock := New(db, testLock1, WithExpiration(0), WithRetryPeriod(0))
-	va, err := getLockValue()
+	rlock := New(db, testLock1, WithExpiration(0), WithRetryPeriod(0), WithDetailLog(true))
+	va, err := GetLockValue()
 	if err != nil {
 		t.Errorf("want get lock value want error nil, get %v", err)
 		return
@@ -58,7 +58,7 @@ func TestRedisLock_Lock(t *testing.T) {
 
 	mock.ClearExpect()
 	mock.ExpectSetNX(testLock1, va, 0).SetErr(fmt.Errorf("redis error"))
-	rlock2 := New(db, testLock2, WithExpiration(0), WithRetryPeriod(0))
+	rlock2 := New(db, testLock2, WithExpiration(0), WithRetryPeriod(0), WithDetailLog(true))
 	_, err = rlock2.Lock(context.Background())
 	if err == nil {
 		t.Errorf("2nd get lock want error not nil, get nil")
@@ -68,7 +68,7 @@ func TestRedisLock_Lock(t *testing.T) {
 
 func TestWithWatchDog(t *testing.T) {
 	expiration := 10 * time.Second
-	va, err := getLockValue()
+	va, err := GetLockValue()
 	if err != nil {
 		t.Errorf("want get lock value want error nil, get %v", err)
 		return
@@ -79,7 +79,7 @@ func TestWithWatchDog(t *testing.T) {
 	mock.ExpectSetNX(testLockKey, va, expiration).SetVal(true)
 	mock.ExpectEvalSha("a2c2e4c111924caec00216d4881ed37a644435ce", []string{testLockKey}, va, expiration.Seconds()).SetVal(1)
 	mock.ExpectEvalSha("a2c2e4c111924caec00216d4881ed37a644435ce", []string{testLockKey}, va, expiration.Seconds()).SetErr(nil)
-	rlock := New(db, testLockKey, WithExpiration(expiration), WithWatchDog(7*time.Second))
+	rlock := New(db, testLockKey, WithExpiration(expiration), WithWatchDog(7*time.Second), WithDetailLog(true))
 	timeStart := time.Now()
 	ctx, err := rlock.Lock(context.Background())
 	if err != nil {
@@ -106,8 +106,8 @@ func TestRedisLock_Unlock(t *testing.T) {
 	testLock1 := "testKeyUnlock"
 	db, mock := redismock.NewClientMock()
 	mock.MatchExpectationsInOrder(false)
-	rlock := New(db, testLock1, WithExpiration(0), WithRetryPeriod(0))
-	va, err := getLockValue()
+	rlock := New(db, testLock1, WithExpiration(0), WithRetryPeriod(0), WithDetailLog(true))
+	va, err := GetLockValue()
 	if err != nil {
 		t.Errorf("want get lock value want error nil, get %v", err)
 		return
@@ -138,8 +138,8 @@ func TestRedisLock_TTL(t *testing.T) {
 	testLock1 := "testKeyTTL"
 	db, mock := redismock.NewClientMock()
 	mock.MatchExpectationsInOrder(false)
-	rlock := New(db, testLock1, WithExpiration(0), WithRetryPeriod(0))
-	va, err := getLockValue()
+	rlock := New(db, testLock1, WithExpiration(0), WithRetryPeriod(0), WithDetailLog(true))
+	va, err := GetLockValue()
 	if err != nil {
 		t.Errorf("want get lock value want error nil, get %v", err)
 		return
@@ -162,7 +162,7 @@ func TestRedisLock_ClearForce(t *testing.T) {
 	testLock1 := "testKeyClearForce"
 	db, mock := redismock.NewClientMock()
 	mock.MatchExpectationsInOrder(false)
-	rlock := New(db, testLock1, WithExpiration(0), WithRetryPeriod(0))
+	rlock := New(db, testLock1, WithExpiration(0), WithRetryPeriod(0), WithDetailLog(true))
 	mock.ExpectDel(testLock1).SetVal(int64(0))
 	mock.ExpectDel(testLock1).SetErr(nil)
 	re, err := rlock.ClearForce(context.Background())
@@ -177,7 +177,7 @@ func TestRedisLock_GetLockIdAndTTL(t *testing.T) {
 	testTTL := 10 * time.Second
 	db, mock := redismock.NewClientMock()
 	mock.MatchExpectationsInOrder(false)
-	rlock := New(db, testLock1, WithExpiration(0), WithRetryPeriod(0))
+	rlock := New(db, testLock1, WithExpiration(0), WithRetryPeriod(0), WithDetailLog(true))
 	mock.ExpectGet(testLock1).SetVal(testLockId)
 	mock.ExpectDel(testLock1).SetErr(nil)
 	mock.ExpectTTL(testLock1).SetVal(testTTL)

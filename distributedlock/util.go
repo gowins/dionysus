@@ -22,7 +22,7 @@ func curGoroutineID() (string, error) {
 	return string(b), nil
 }
 
-func getLockValue() (string, error) {
+func GetLockValue() (string, error) {
 	hostName, err := os.Hostname()
 	if err != nil {
 		return "", fmt.Errorf("get host name error %v", err)

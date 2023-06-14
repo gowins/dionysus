@@ -55,11 +55,15 @@ defer rlock.Unlock(context.Background())
 // do something
 ```
 
+详细例子可参考
+[example/redislock](example/redislock/demo.go)
+
 ### 配置说明
 
 ```text
 retryPeriod: 当获取锁失败是，重新尝试获取锁的间隔时间，默认为1秒。
 expiration: 锁的过期时间，超过该时间，redis中会删除该锁的持有，默认为0，表示永不过期，注意这种情况下，程序异常退出为释放锁的话，会造成死锁的情况。
 refreshPeriod: 锁的续期时间间隔，该值必须大于expiration，默认为0，表示不开启自动续期锁的过期时间。建议该值配为expiration-3*second左右。
+detailLog: 是否打印锁获取及释放的详情日志，默认为false关闭。
 ```
 

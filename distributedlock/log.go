@@ -9,7 +9,7 @@ var (
 
 func initLog() logger.Logger {
 	os := []logger.Option{ // 根据实际需求添加option
-		logger.WithLevelEnabler(logger.DebugLevel),
+		logger.WithLevelEnabler(logger.InfoLevel),
 		logger.WithEncoderCfg(logger.NewEncoderConfig()),
 		logger.AddCallerSkip(1),
 		logger.AddCaller(),

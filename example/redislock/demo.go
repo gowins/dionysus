@@ -22,8 +22,9 @@ func main() {
 		return
 	}
 
-	// lock will expiration after 10s automatic
-	rlock := dl.New(redisCli, "diodemolockkey", dl.WithExpiration(10*time.Second), dl.WithWatchDog(7*time.Second))
+	rlock := dl.New(redisCli, "diodemolockkey", dl.WithExpiration(10*time.Second), dl.WithWatchDog(7*time.Second), dl.WithDetailLog(false))
+	//rlock := dl.New(redisCli, "diodemolockkey", dl.WithExpiration(10*time.Second))
+	//rlock := dl.New(redisCli, "diodemolockkey")
 
 	re, err := rlock.ClearForce(context.Background())
 	if re >= 0 {
@@ -42,19 +43,32 @@ func main() {
 }
 
 func lockRun(rlock *dl.RedisLock, count int) {
-	_, err := rlock.Lock(context.Background())
+	ctx, err := rlock.Lock(context.Background())
 	if err != nil {
 		log.Errorf("dio demo lock error %v", err)
 		return
 	}
+	defer func() {
+		err = rlock.Unlock(context.Background())
+		if err != nil {
+			log.Errorf("redis unlock error %v", err)
+		}
+	}()
 	// do something
+	lockid, _ := dl.GetLockValue()
 	for i := 0; i < count; i++ {
-		id, ttl, err := rlock.GetLockIdAndTTL(context.Background())
-		log.Infof("id %v time left ttl %v, error %v", id, ttl.String(), err)
-		time.Sleep(time.Second)
-	}
-	err = rlock.Unlock(context.Background())
-	if err != nil {
-		log.Errorf("redis unlock error %v", err)
+		select {
+		case <-ctx.Done():
+			log.Infof("lock is expired at %v, lockid %v", time.Now().String(), lockid)
+			return
+		default:
+			id, ttl, err := rlock.GetLockIdAndTTL(context.Background())
+			if id != lockid {
+				log.Infof("lock is expired at %v, lockid %v", time.Now().String(), lockid)
+				return
+			}
+			log.Infof("id %v time left ttl %v, error %v", id, ttl.String(), err)
+			time.Sleep(time.Second)
+		}
 	}
 }

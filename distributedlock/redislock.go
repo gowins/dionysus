@@ -22,6 +22,7 @@ type RedisLock struct {
 	expiration    time.Duration
 	retryPeriod   time.Duration
 	refreshPeriod time.Duration
+	detailLog     bool
 }
 
 type Option func(redisLock *RedisLock)
@@ -44,6 +45,12 @@ func WithWatchDog(refreshPeriod time.Duration) Option {
 	}
 }
 
+func WithDetailLog(enable bool) Option {
+	return func(redisLock *RedisLock) {
+		redisLock.detailLog = enable
+	}
+}
+
 func New(rclient *redis.Client, lockKey string, opts ...Option) *RedisLock {
 	redisLock := &RedisLock{
 		client:      rclient,
@@ -62,18 +69,23 @@ func (rl *RedisLock) Lock(ctx context.Context) (context.Context, error) {
 		return ctx, fmt.Errorf("refreshPeriod ")
 	}
 
-	lockValue, err := getLockValue()
+	lockValue, err := GetLockValue()
 	if err != nil {
 		return ctx, fmt.Errorf("get lock value error %v", err)
 	}
 
 	for {
+		if rl.detailLog {
+			log.Infof("try to get lock %v : %v time %v", rl.lockKey, lockValue, time.Now().String())
+		}
 		ok, err := rl.client.SetNX(ctx, rl.lockKey, lockValue, rl.expiration).Result()
 		if err != nil {
 			log.Errorf("set lock error %v", err)
 		}
 		if err == nil && ok {
-			log.Debugf("get lock success %v time %v", lockValue, time.Now().String())
+			if rl.detailLog {
+				log.Infof("get lock %v success %v time %v", rl.lockKey, lockValue, time.Now().String())
+			}
 			if rl.refreshPeriod > 0 {
 				nctx, cancelFunc := context.WithCancel(ctx)
 				go rl.watchDog(nctx, cancelFunc, lockValue)
@@ -90,9 +102,12 @@ func (rl *RedisLock) Lock(ctx context.Context) (context.Context, error) {
 }
 
 func (rl *RedisLock) Unlock(ctx context.Context) error {
-	lockValue, err := getLockValue()
+	lockValue, err := GetLockValue()
 	if err != nil {
 		return fmt.Errorf("get lock value error %v", err)
+	}
+	if rl.detailLog {
+		log.Infof("try to release lock %v : %v time %v", rl.lockKey, lockValue, time.Now().String())
 	}
 	res, err := luaRelease.Run(ctx, rl.client, []string{rl.lockKey}, lockValue).Result()
 	if err == redis.Nil {
@@ -109,7 +124,7 @@ func (rl *RedisLock) Unlock(ctx context.Context) error {
 
 // TTL returns the remaining time-to-live. Returns 0 if the lock has expired.
 func (rl *RedisLock) TTL(ctx context.Context) (time.Duration, error) {
-	lockValue, err := getLockValue()
+	lockValue, err := GetLockValue()
 	if err != nil {
 		return 0, fmt.Errorf("get lock value error %v", err)
 	}
@@ -133,12 +148,20 @@ func (rl *RedisLock) watchDog(ctx context.Context, cancelFunc context.CancelFunc
 		case <-expTicker.C:
 			resp := luaRefresh.Run(ctx, rl.client, []string{rl.lockKey}, lockValue, rl.expiration.Seconds())
 			if result, err := resp.Result(); err != nil || result == int64(0) {
-				log.Debugf("expire lock failed error %v, result %v, lockid %v", err, result, lockValue)
+				if rl.detailLog {
+					log.Infof("expire lock failed error %v, result %v, lockkey %v, lockid %v, time %v", err, result, rl.lockKey, lockValue, time.Now().String())
+				}
 				cancelFunc()
 				return
+			} else {
+				if rl.detailLog {
+					log.Infof("set expire lock success lock key %v, lockid %v, time %v ", rl.lockKey, lockValue, time.Now().String())
+				}
 			}
 		case <-ctx.Done():
-			log.Infof(" lock cancel")
+			if rl.detailLog {
+				log.Infof("watchDog cancel lock key %v, lockid %v, time %v ", rl.lockKey, lockValue, time.Now().String())
+			}
 		}
 	}
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func TestGetLockValue(t *testing.T) {
-	lockValue, err := getLockValue()
+	lockValue, err := GetLockValue()
 	if err != nil {
 		t.Errorf("want get lock value error nil, get error %v", err)
 		return
