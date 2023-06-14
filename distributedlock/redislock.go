@@ -17,11 +17,11 @@ var (
 )
 
 type RedisLock struct {
-	client         *redis.Client
-	lockKey        string
-	expiration     time.Duration
-	retryTTL       time.Duration
-	watchDogEnable bool
+	client        *redis.Client
+	lockKey       string
+	expiration    time.Duration
+	retryPeriod   time.Duration
+	refreshPeriod time.Duration
 }
 
 type Option func(redisLock *RedisLock)
@@ -32,25 +32,24 @@ func WithExpiration(expiration time.Duration) Option {
 	}
 }
 
-func WithRetryTTL(retryTTL time.Duration) Option {
+func WithRetryPeriod(retryPeriod time.Duration) Option {
 	return func(redisLock *RedisLock) {
-		redisLock.retryTTL = retryTTL
+		redisLock.retryPeriod = retryPeriod
 	}
 }
 
-func WithWatchDog(enable bool) Option {
+func WithWatchDog(refreshPeriod time.Duration) Option {
 	return func(redisLock *RedisLock) {
-		redisLock.watchDogEnable = enable
+		redisLock.refreshPeriod = refreshPeriod
 	}
 }
 
 func New(rclient *redis.Client, lockKey string, opts ...Option) *RedisLock {
 	redisLock := &RedisLock{
-		client:         rclient,
-		lockKey:        lockKey,
-		expiration:     defaultExpiration,
-		retryTTL:       defaultRetryTTL,
-		watchDogEnable: false,
+		client:      rclient,
+		lockKey:     lockKey,
+		expiration:  defaultExpiration,
+		retryPeriod: defaultRetryTTL,
 	}
 	for _, opt := range opts {
 		opt(redisLock)
@@ -59,6 +58,10 @@ func New(rclient *redis.Client, lockKey string, opts ...Option) *RedisLock {
 }
 
 func (rl *RedisLock) Lock(ctx context.Context) (context.Context, error) {
+	if rl.refreshPeriod >= rl.expiration && rl.refreshPeriod != 0 {
+		return ctx, fmt.Errorf("refreshPeriod ")
+	}
+
 	lockValue, err := getLockValue()
 	if err != nil {
 		return ctx, fmt.Errorf("get lock value error %v", err)
@@ -68,11 +71,10 @@ func (rl *RedisLock) Lock(ctx context.Context) (context.Context, error) {
 		ok, err := rl.client.SetNX(ctx, rl.lockKey, lockValue, rl.expiration).Result()
 		if err != nil {
 			log.Errorf("set lock error %v", err)
-			return ctx, fmt.Errorf("set lock error %v", err)
 		}
-		if ok {
-			log.Infof("get lock success %v time %v", lockValue, time.Now().String())
-			if rl.watchDogEnable && rl.expiration > 3*time.Second {
+		if err == nil && ok {
+			log.Debugf("get lock success %v time %v", lockValue, time.Now().String())
+			if rl.refreshPeriod > 0 {
 				nctx, cancelFunc := context.WithCancel(ctx)
 				go rl.watchDog(nctx, cancelFunc, lockValue)
 				return nctx, nil
@@ -80,10 +82,10 @@ func (rl *RedisLock) Lock(ctx context.Context) (context.Context, error) {
 				return ctx, nil
 			}
 		}
-		if rl.retryTTL <= 0 {
+		if rl.retryPeriod <= 0 {
 			return ctx, fmt.Errorf("get lock failed")
 		}
-		time.Sleep(rl.retryTTL)
+		time.Sleep(rl.retryPeriod)
 	}
 }
 
@@ -125,13 +127,13 @@ func (rl *RedisLock) TTL(ctx context.Context) (time.Duration, error) {
 }
 
 func (rl *RedisLock) watchDog(ctx context.Context, cancelFunc context.CancelFunc, lockValue string) {
-	expTicker := time.NewTicker(rl.expiration - time.Second*3)
+	expTicker := time.NewTicker(rl.refreshPeriod)
 	for {
 		select {
 		case <-expTicker.C:
 			resp := luaRefresh.Run(ctx, rl.client, []string{rl.lockKey}, lockValue, rl.expiration.Seconds())
 			if result, err := resp.Result(); err != nil || result == int64(0) {
-				log.Infof("expire lock failed error %v, result %v, lockid %v", err, result, lockValue)
+				log.Debugf("expire lock failed error %v, result %v, lockid %v", err, result, lockValue)
 				cancelFunc()
 				return
 			}

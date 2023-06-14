@@ -23,7 +23,7 @@ func main() {
 	}
 
 	// lock will expiration after 10s automatic
-	rlock := dl.New(redisCli, "diodemolockkey", dl.WithExpiration(10*time.Second), dl.WithWatchDog(true))
+	rlock := dl.New(redisCli, "diodemolockkey", dl.WithExpiration(10*time.Second), dl.WithWatchDog(7*time.Second))
 
 	re, err := rlock.ClearForce(context.Background())
 	if re >= 0 {
