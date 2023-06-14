@@ -56,7 +56,7 @@ defer rlock.Unlock(context.Background())
 ```
 
 详细例子可参考
-[example/redislock](example/redislock/demo.go)
+[example/redislock](../example/redislock/demo.go)
 
 ### 配置说明
 
