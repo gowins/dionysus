@@ -8,6 +8,7 @@ import (
 )
 
 var goroutineSpace = []byte("goroutine ")
+var lockValuePrefix = os.Getenv("LOCK_VALUE")
 
 func curGoroutineID() (string, error) {
 	b := make([]byte, 64)
@@ -31,5 +32,5 @@ func GetLockValue() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("get go id error %v", err)
 	}
-	return hostName + "goid" + goid, nil
+	return lockValuePrefix + hostName + "goid" + goid, nil
 }
