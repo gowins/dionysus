@@ -14,7 +14,7 @@
 
 通过redis的setnx的特性实现锁的独占性，用lua脚本执行的原子性来保证锁的对称性，redis的expire超时删除key的机制实现锁可靠性。
 
-主要通过三种方式的锁：
+主要提供三种方式的锁：
 
 模式一: 永不过期的锁，这种情况下，当持有锁的服务突然挂掉，锁可能为释放，有死锁的风险
 
@@ -61,7 +61,7 @@ defer rlock.Unlock(context.Background())
 ### 配置说明
 
 ```text
-retryPeriod: 当获取锁失败是，重新尝试获取锁的间隔时间，默认为1秒。
+retryPeriod: 当获取锁失败时，重新尝试获取锁的间隔时间，默认为1秒。
 expiration: 锁的过期时间，超过该时间，redis中会删除该锁的持有，默认为0，表示永不过期，注意这种情况下，程序异常退出为释放锁的话，会造成死锁的情况。
 refreshPeriod: 锁的续期时间间隔，该值必须大于expiration，默认为0，表示不开启自动续期锁的过期时间。建议该值配为expiration-3*second左右。
 detailLog: 是否打印锁获取及释放的详情日志，默认为false关闭。

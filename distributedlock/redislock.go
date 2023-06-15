@@ -66,7 +66,7 @@ func New(rclient *redis.Client, lockKey string, opts ...Option) *RedisLock {
 
 func (rl *RedisLock) Lock(ctx context.Context) (context.Context, error) {
 	if rl.refreshPeriod >= rl.expiration && rl.refreshPeriod != 0 {
-		return ctx, fmt.Errorf("refreshPeriod ")
+		return ctx, fmt.Errorf("refreshPeriod must < expiration")
 	}
 
 	lockValue, err := GetLockValue()
@@ -76,7 +76,7 @@ func (rl *RedisLock) Lock(ctx context.Context) (context.Context, error) {
 
 	for {
 		if rl.detailLog {
-			log.Infof("try to get lock %v : %v time %v", rl.lockKey, lockValue, time.Now().String())
+			log.Infof("try to get lock %v : %v", rl.lockKey, lockValue)
 		}
 		ok, err := rl.client.SetNX(ctx, rl.lockKey, lockValue, rl.expiration).Result()
 		if err != nil {
@@ -84,7 +84,7 @@ func (rl *RedisLock) Lock(ctx context.Context) (context.Context, error) {
 		}
 		if err == nil && ok {
 			if rl.detailLog {
-				log.Infof("get lock %v success %v time %v", rl.lockKey, lockValue, time.Now().String())
+				log.Infof("get lock %v success %v", rl.lockKey, lockValue)
 			}
 			if rl.refreshPeriod > 0 {
 				nctx, cancelFunc := context.WithCancel(ctx)
@@ -107,7 +107,7 @@ func (rl *RedisLock) Unlock(ctx context.Context) error {
 		return fmt.Errorf("get lock value error %v", err)
 	}
 	if rl.detailLog {
-		log.Infof("try to release lock %v : %v time %v", rl.lockKey, lockValue, time.Now().String())
+		log.Infof("try to release lock %v : %v", rl.lockKey, lockValue)
 	}
 	res, err := luaRelease.Run(ctx, rl.client, []string{rl.lockKey}, lockValue).Result()
 	if err == redis.Nil {
@@ -149,18 +149,18 @@ func (rl *RedisLock) watchDog(ctx context.Context, cancelFunc context.CancelFunc
 			resp := luaRefresh.Run(ctx, rl.client, []string{rl.lockKey}, lockValue, rl.expiration.Seconds())
 			if result, err := resp.Result(); err != nil || result == int64(0) {
 				if rl.detailLog {
-					log.Infof("expire lock failed error %v, result %v, lockkey %v, lockid %v, time %v", err, result, rl.lockKey, lockValue, time.Now().String())
+					log.Infof("expire lock failed error %v, result %v, lockkey %v, lockid %v", err, result, rl.lockKey, lockValue)
 				}
 				cancelFunc()
 				return
 			} else {
 				if rl.detailLog {
-					log.Infof("set expire lock success lock key %v, lockid %v, time %v ", rl.lockKey, lockValue, time.Now().String())
+					log.Infof("set expire lock success lock key %v, lockid %v", rl.lockKey, lockValue)
 				}
 			}
 		case <-ctx.Done():
 			if rl.detailLog {
-				log.Infof("watchDog cancel lock key %v, lockid %v, time %v ", rl.lockKey, lockValue, time.Now().String())
+				log.Infof("watchDog cancel lock key %v, lockid %v", rl.lockKey, lockValue)
 			}
 		}
 	}
