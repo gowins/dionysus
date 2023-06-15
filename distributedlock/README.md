@@ -12,7 +12,8 @@
 
 ## 原理
 
-通过redis的setnx的特性实现锁的独占性，用lua脚本执行的原子性来保证锁的对称性，redis的expire超时删除key的机制实现锁可靠性。
+通过redis的setnx的特性实现锁的独占性，用lua脚本执行的原子性来保证锁的对称性，redis的expire超时删除key的机制实现锁可靠性。  
+锁的身份id由环境变量```LOCK_VALUE+hostname+goroutineid```组成
 
 主要提供三种方式的锁：
 
