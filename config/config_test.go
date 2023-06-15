@@ -26,7 +26,6 @@ func TestSetup(t *testing.T) {
 			Func: func(valueString string) error {
 				getRes = append(getRes, valueString)
 				fmt.Printf("DbName valueString is %v\n", valueString)
-				panic("test panic")
 				return nil
 			},
 		},
