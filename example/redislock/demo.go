@@ -22,9 +22,10 @@ func main() {
 		return
 	}
 
-	rlock := dl.New(redisCli, "diodemolockkey", dl.WithExpiration(10*time.Second), dl.WithWatchDog(7*time.Second), dl.WithDetailLog(false))
-	//rlock := dl.New(redisCli, "diodemolockkey", dl.WithExpiration(10*time.Second))
-	//rlock := dl.New(redisCli, "diodemolockkey")
+	lockKey := "diodemolockkey"
+	rlock := dl.New(redisCli, lockKey, dl.WithExpiration(10*time.Second), dl.WithWatchDog(7*time.Second), dl.WithDetailLog(false))
+	//rlock := dl.New(redisCli, lockKey, dl.WithExpiration(10*time.Second))
+	//rlock := dl.New(redisCli, lockKey)
 
 	re, err := rlock.ClearForce(context.Background())
 	if re >= 0 {
