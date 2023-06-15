@@ -12,8 +12,7 @@
 
 ## 原理
 
-通过redis的setnx的特性实现锁的独占性，用lua脚本执行的原子性来保证锁的对称性，redis的expire超时删除key的机制实现锁可靠性。  
-锁的身份id由环境变量```LOCK_VALUE+hostname+goroutineid```组成
+通过redis的setnx的特性实现锁的独占性，用lua脚本执行的原子性来保证锁的对称性，redis的expire超时删除key的机制实现锁可靠性。
 
 主要提供三种方式的锁：
 
@@ -35,7 +34,8 @@
 
 ```text
 redisCli := redis.NewClient(&redis.Options{})
-// lockey代表在redis中的锁名，分布式服务中，同时只有一个实例可持有该锁名的锁
+// lockey代表在redis中的锁名，分布式服务中，同时只有一个实例可持有该锁
+// 锁的身份id由环境变量```LOCK_VALUE+hostname+goroutineid```组成
 lockey := "diodemolockkey"
 默认情况为模式一
 rlock := New(redisCli, lockey)
