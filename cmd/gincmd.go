@@ -38,9 +38,9 @@ type ginCommand struct {
 	shutdownSteps []StopStep
 }
 
-func NewGinCommand() *ginCommand {
+func NewGinCommand(opts ...ginx.GinOption) *ginCommand {
 	return &ginCommand{
-		ZeroGinRouter: ginx.NewZeroGinRouter(),
+		ZeroGinRouter: ginx.NewZeroGinRouter(opts...),
 		cmd:           &cobra.Command{Use: GinUse, Short: "Run as go-zero server"},
 		server:        &http.Server{},
 		shutdownSteps: []StopStep{},
@@ -82,6 +82,7 @@ func (g *ginCommand) startServer() {
 	if opentelemetry.TracerIsEnable() {
 		log.Infof("[Dio] Engine use opentelemetry trace")
 		g.server.Handler = opentelemetry.InitHttpHandler(g.server.Handler)
+
 	}
 
 	if err := g.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
