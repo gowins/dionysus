@@ -23,8 +23,9 @@ type ginRouter struct {
 
 func NewZeroGinRouter(opts ...GinOption) ZeroGinRouter {
 	g := gin.New()
+	// set gin context fall back true default for trace use
+	g.ContextWithFallback = true
 	// set properties of gin.Engine
-	opts = append(opts, WithContextWithFallback(true))
 	for _, opt := range opts {
 		opt(g)
 	}

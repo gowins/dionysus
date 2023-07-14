@@ -2,6 +2,7 @@ package httpclient
 
 import (
 	"bytes"
+	"context"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"io"
 	"net/http"
@@ -32,8 +33,21 @@ type client struct {
 	do     DoFunc
 }
 
-func (c *client) PostForm(url string, val url.Values, headers http.Header) (*http.Response, error) {
-	request, err := http.NewRequest(http.MethodPost, url, strings.NewReader(val.Encode()))
+func (c *client) getRequestOptions(opts ...RequestOption) *RequestOptions {
+	reqOptions := &RequestOptions{
+		Retrier:    c.opts.Retrier,
+		RetryCount: c.opts.RetryCount,
+		Ctx:        context.Background(),
+	}
+	for _, opt := range opts {
+		opt(reqOptions)
+	}
+	return reqOptions
+}
+
+func (c *client) PostForm(url string, val url.Values, headers http.Header, opts ...RequestOption) (*http.Response, error) {
+	requestOptions := c.getRequestOptions(opts...)
+	request, err := http.NewRequestWithContext(requestOptions.Ctx, http.MethodPost, url, strings.NewReader(val.Encode()))
 	if err != nil {
 		return nil, errors.Wrap(err, "PostForm - request creation failed")
 	}
@@ -44,7 +58,7 @@ func (c *client) PostForm(url string, val url.Values, headers http.Header) (*htt
 
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	return c.Do(request)
+	return c.DoWithOptions(request, requestOptions)
 }
 
 func (c *client) Clone(opts ...httpclient.Option) Client {
@@ -110,8 +124,9 @@ func newClient(opts Options) Client {
 }
 
 // Get makes a HTTP GET request to provided URL
-func (c *client) Get(url string, headers http.Header) (*http.Response, error) {
-	request, err := http.NewRequest(http.MethodGet, url, nil)
+func (c *client) Get(url string, headers http.Header, opts ...RequestOption) (*http.Response, error) {
+	requestOptions := c.getRequestOptions(opts...)
+	request, err := http.NewRequestWithContext(requestOptions.Ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "GET - request creation failed")
 	}
@@ -120,12 +135,13 @@ func (c *client) Get(url string, headers http.Header) (*http.Response, error) {
 		request.Header = headers
 	}
 
-	return c.Do(request)
+	return c.DoWithOptions(request, requestOptions)
 }
 
 // Post makes a HTTP POST request to provided URL and requestBody
-func (c *client) Post(url string, body io.Reader, headers http.Header) (*http.Response, error) {
-	request, err := http.NewRequest(http.MethodPost, url, body)
+func (c *client) Post(url string, body io.Reader, headers http.Header, opts ...RequestOption) (*http.Response, error) {
+	requestOptions := c.getRequestOptions(opts...)
+	request, err := http.NewRequestWithContext(requestOptions.Ctx, http.MethodPost, url, body)
 	if err != nil {
 		return nil, errors.Wrap(err, "POST - request creation failed")
 	}
@@ -134,12 +150,13 @@ func (c *client) Post(url string, body io.Reader, headers http.Header) (*http.Re
 		request.Header = headers
 	}
 
-	return c.Do(request)
+	return c.DoWithOptions(request, requestOptions)
 }
 
 // Put makes a HTTP PUT request to provided URL and requestBody
-func (c *client) Put(url string, body io.Reader, headers http.Header) (*http.Response, error) {
-	request, err := http.NewRequest(http.MethodPut, url, body)
+func (c *client) Put(url string, body io.Reader, headers http.Header, opts ...RequestOption) (*http.Response, error) {
+	requestOptions := c.getRequestOptions(opts...)
+	request, err := http.NewRequestWithContext(requestOptions.Ctx, http.MethodPut, url, body)
 	if err != nil {
 		return nil, errors.Wrap(err, "PUT - request creation failed")
 	}
@@ -148,12 +165,13 @@ func (c *client) Put(url string, body io.Reader, headers http.Header) (*http.Res
 		request.Header = headers
 	}
 
-	return c.Do(request)
+	return c.DoWithOptions(request, requestOptions)
 }
 
 // Patch makes a HTTP PATCH request to provided URL and requestBody
-func (c *client) Patch(url string, body io.Reader, headers http.Header) (*http.Response, error) {
-	request, err := http.NewRequest(http.MethodPatch, url, body)
+func (c *client) Patch(url string, body io.Reader, headers http.Header, opts ...RequestOption) (*http.Response, error) {
+	requestOptions := c.getRequestOptions(opts...)
+	request, err := http.NewRequestWithContext(requestOptions.Ctx, http.MethodPatch, url, body)
 	if err != nil {
 		return nil, errors.Wrap(err, "PATCH - request creation failed")
 	}
@@ -162,12 +180,13 @@ func (c *client) Patch(url string, body io.Reader, headers http.Header) (*http.R
 		request.Header = headers
 	}
 
-	return c.Do(request)
+	return c.DoWithOptions(request, requestOptions)
 }
 
 // Delete makes a HTTP DELETE request with provided URL
-func (c *client) Delete(url string, headers http.Header) (*http.Response, error) {
-	request, err := http.NewRequest(http.MethodDelete, url, nil)
+func (c *client) Delete(url string, headers http.Header, opts ...RequestOption) (*http.Response, error) {
+	requestOptions := c.getRequestOptions(opts...)
+	request, err := http.NewRequestWithContext(requestOptions.Ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "DELETE - request creation failed")
 	}
@@ -176,7 +195,7 @@ func (c *client) Delete(url string, headers http.Header) (*http.Response, error)
 		request.Header = headers
 	}
 
-	return c.Do(request)
+	return c.DoWithOptions(request, requestOptions)
 }
 
 func (c *client) doFunc(req *http.Request, fn func(*http.Response) error) error {
@@ -191,12 +210,28 @@ func (c *client) doFunc(req *http.Request, fn func(*http.Response) error) error 
 
 // Do makes an HTTP request with the native `http.Do` interface
 func (c *client) Do(request *http.Request) (*http.Response, error) {
+	opts := &RequestOptions{
+		Retrier:    c.opts.Retrier,
+		RetryCount: c.opts.RetryCount,
+	}
+	return c.DoWithOptions(request, opts)
+}
+
+// DoWithOptions makes an HTTP request with the native `http.DoWithOptions` interface
+func (c *client) DoWithOptions(request *http.Request, opts *RequestOptions) (*http.Response, error) {
 	var (
 		err        error
 		resp       *http.Response
 		bodyReader *bytes.Reader
 		reqData    []byte
 	)
+
+	if opts == nil {
+		opts = &RequestOptions{
+			Retrier:    c.opts.Retrier,
+			RetryCount: c.opts.RetryCount,
+		}
+	}
 
 	if request.Body != nil {
 		reqData, err = io.ReadAll(request.Body)
@@ -207,7 +242,7 @@ func (c *client) Do(request *http.Request) (*http.Response, error) {
 		request.Body = io.NopCloser(bodyReader) // prevents closing the body between retries
 	}
 
-	for i := 0; i < c.opts.RetryCount; i++ {
+	for i := 0; i < opts.RetryCount; i++ {
 		if resp != nil {
 			resp.Body.Close()
 		}
@@ -218,7 +253,7 @@ func (c *client) Do(request *http.Request) (*http.Response, error) {
 		})
 
 		if err != nil {
-			if backoffTime := c.opts.Retrier.NextInterval(i); backoffTime != 0 {
+			if backoffTime := opts.Retrier.NextInterval(i); backoffTime != 0 {
 				time.Sleep(backoffTime)
 			}
 			if len(reqData) != 0 {
