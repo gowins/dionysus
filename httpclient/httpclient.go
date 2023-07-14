@@ -226,6 +226,13 @@ func (c *client) DoWithOptions(request *http.Request, opts *RequestOptions) (*ht
 		reqData    []byte
 	)
 
+	if opts == nil {
+		opts = &RequestOptions{
+			Retrier:    c.opts.Retrier,
+			RetryCount: c.opts.RetryCount,
+		}
+	}
+
 	if request.Body != nil {
 		reqData, err = io.ReadAll(request.Body)
 		if err != nil {
