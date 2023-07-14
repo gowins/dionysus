@@ -1,6 +1,7 @@
 package httpclient
 
 import (
+	"context"
 	"net/http"
 	"time"
 )
@@ -31,3 +32,11 @@ func (opts Options) Clone() Options {
 
 // Option ...
 type Option func(opts *Options)
+
+type RequestOptions struct {
+	Retrier    Retriable
+	RetryCount int
+	Ctx        context.Context
+}
+
+type RequestOption func(opts *RequestOptions)

@@ -1,6 +1,7 @@
 package httpclient
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -52,5 +53,29 @@ func WithTransport(t http.RoundTripper) Option {
 func WithTracerEnable() Option {
 	return func(c *Options) {
 		c.TracerEnable = true
+	}
+}
+
+// RequestOption http request option
+type RequestOption = httpclient.RequestOption
+
+// RequestOptions represents the http request options
+type RequestOptions = httpclient.RequestOptions
+
+func WithRequestRetryCount(count int) RequestOption {
+	return func(opts *httpclient.RequestOptions) {
+		opts.RetryCount = count
+	}
+}
+
+func WithRequestRetrier(retrier Retriable) RequestOption {
+	return func(opts *httpclient.RequestOptions) {
+		opts.Retrier = retrier
+	}
+}
+
+func WithRequestContext(ctx context.Context) RequestOption {
+	return func(opts *httpclient.RequestOptions) {
+		opts.Ctx = ctx
 	}
 }
