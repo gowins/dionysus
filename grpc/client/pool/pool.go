@@ -3,12 +3,14 @@ package pool
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/connectivity"
 	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type GrpcPool struct {
@@ -46,6 +48,11 @@ type ScaleOption struct {
 	ScalePeriod     time.Duration
 	MaxConn         int
 	DesireMaxStream int
+}
+
+var DefaultDialOpts = []grpc.DialOption{
+	grpc.WithTransportCredentials(insecure.NewCredentials()),
+	grpc.WithBlock(),
 }
 
 func InitGrpcPool(target string, opts ...Option) (*GrpcPool, error) {
