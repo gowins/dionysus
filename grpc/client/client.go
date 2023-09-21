@@ -48,7 +48,7 @@ var defaultDialOpts = []grpc.DialOption{
 // GrpcPool implemented ClientConnInterface
 type GrpcPool struct {
 	conns       []*grpc.ClientConn
-	PoolCnt     *PoolController
+	poolCnt     *PoolController
 	dialOptions []grpc.DialOption
 	deadline    time.Duration
 }
@@ -91,6 +91,10 @@ func (gp *GrpcPool) NewStream(ctx context.Context, desc *grpc.StreamDesc, method
 	return gp.getConn().NewStream(ctx, desc, method, opts...)
 }
 
+// Closed Just back conn, GP no need close conn exclude scale according to PoolController
+func (gp *GrpcPool) Close() {
+
+}
 func (gp *GrpcPool) combine(o1 []grpc.DialOption, o2 []grpc.DialOption) []grpc.DialOption {
 	// we don't use append because o1 could have extra capacity whose
 	// elements would be overwritten, which could cause inadvertent
@@ -116,7 +120,7 @@ func WithDialOptions(dp []grpc.DialOption) Option {
 
 func WithPoolControl(pc *PoolController) Option {
 	return func(gp *GrpcPool) {
-		gp.PoolCnt = pc
+		gp.poolCnt = pc
 	}
 }
 func WithDialDeadline(t time.Duration) Option {
@@ -132,7 +136,7 @@ func Dial(target string, opts ...Option) (*GrpcPool, error) {
 		return nil, errors.New("Invalid target")
 	}
 	gp := &GrpcPool{
-		PoolCnt: &PoolController{
+		poolCnt: &PoolController{
 			PoolSize:           defaultPoolCardinalSize * runtime.GOMAXPROCS(0),
 			MaxCurrentStream:   runtime.GOMAXPROCS(0),
 			MinIdleConns:       defaultMinIdleConns,
@@ -144,10 +148,10 @@ func Dial(target string, opts ...Option) (*GrpcPool, error) {
 	for _, opt := range opts {
 		opt(gp)
 	}
-	//conn size todo: similarly keepalive pragrams
-	gp.conns = make([]*grpc.ClientConn, gp.PoolCnt.PoolSize)
+	//conn size todo: similarly keepalive programs
+	gp.conns = make([]*grpc.ClientConn, gp.poolCnt.MinIdleConns)
 	//conn timeout
-	for i := 0; i < gp.PoolCnt.MinIdleConns; i++ {
+	for i := 0; i < gp.poolCnt.MinIdleConns; i++ {
 		dialOpts := gp.combine(defaultDialOpts, gp.dialOptions)
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(gp.deadline))
 		defer cancel()
@@ -155,7 +159,7 @@ func Dial(target string, opts ...Option) (*GrpcPool, error) {
 		if err != nil {
 			return gp, fmt.Errorf("grpc dial target %v error %v", target, err)
 		}
-		gp.conns = append(gp.conns, conn)
+		gp.conns[i] = conn
 	}
 
 	return gp, nil
