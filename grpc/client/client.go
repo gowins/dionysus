@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 )
@@ -47,7 +49,8 @@ var defaultDialOpts = []grpc.DialOption{
 
 // GrpcPool implemented ClientConnInterface
 type GrpcPool struct {
-	conns       []*grpc.ClientConn
+	conns       []*Conn
+	next        uint32 // round-robin balancer
 	poolCnt     *PoolController
 	dialOptions []grpc.DialOption
 	deadline    time.Duration
@@ -55,7 +58,7 @@ type GrpcPool struct {
 
 // Conn todo
 type Conn struct {
-	grpc.ClientConn
+	*grpc.ClientConn
 }
 type PoolController struct {
 	// Maximum number of grpc connections.
@@ -76,26 +79,42 @@ type PoolController struct {
 	IdleCheckFrequency time.Duration
 }
 
-func (gp *GrpcPool) getConn() *grpc.ClientConn {
-	//选择器
-	return gp.conns[0]
-}
-
 // Invoke sends the RPC request on the wire and returns after response is
 func (gp *GrpcPool) Invoke(ctx context.Context, method string, args, reply interface{}, opts ...grpc.CallOption) error {
-	return gp.getConn().Invoke(ctx, method, args, reply, opts...)
+	return gp.pickLeastConn().Invoke(ctx, method, args, reply, opts...)
 }
 
 // NewStream begins a streaming RPC.
 func (gp *GrpcPool) NewStream(ctx context.Context, desc *grpc.StreamDesc, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
-	return gp.getConn().NewStream(ctx, desc, method, opts...)
+	return gp.pickLeastConn().NewStream(ctx, desc, method, opts...)
 }
 
-// Closed Just back conn, GP no need close conn exclude scale according to PoolController
+// Close  Just back conn, GP no need close conn exclude scale according to PoolController
 func (gp *GrpcPool) Close() {
 
 }
-func (gp *GrpcPool) combine(o1 []grpc.DialOption, o2 []grpc.DialOption) []grpc.DialOption {
+
+func (gp *GrpcPool) pickLeastConn() *Conn {
+	connsLen := uint32(len(gp.conns))
+	nextIndex := atomic.AddUint32(&gp.next, 1)
+
+	conn := gp.conns[nextIndex%connsLen]
+
+	// if conn is not ready, choose a next ready conn
+	if conn.GetState() != connectivity.Ready && conn.GetState() != connectivity.Idle {
+		var i uint32
+		for i = 0; i < connsLen; i++ {
+			idx := (i + nextIndex) % connsLen
+			if gp.conns[idx].GetState() == connectivity.Ready ||
+				gp.conns[idx].GetState() == connectivity.Idle {
+				return gp.conns[idx]
+			}
+		}
+	}
+	return conn
+}
+
+func combine[T any](o1 []T, o2 []T) []T {
 	// we don't use append because o1 could have extra capacity whose
 	// elements would be overwritten, which could cause inadvertent
 	// sharing (and race conditions) between concurrent calls
@@ -104,7 +123,7 @@ func (gp *GrpcPool) combine(o1 []grpc.DialOption, o2 []grpc.DialOption) []grpc.D
 	} else if len(o2) == 0 {
 		return o1
 	}
-	ret := make([]grpc.DialOption, len(o1)+len(o2))
+	ret := make([]T, len(o1)+len(o2))
 	copy(ret, o1)
 	copy(ret[len(o1):], o2)
 	return ret
@@ -112,9 +131,9 @@ func (gp *GrpcPool) combine(o1 []grpc.DialOption, o2 []grpc.DialOption) []grpc.D
 
 type Option = func(*GrpcPool)
 
-func WithDialOptions(dp []grpc.DialOption) Option {
+func WithDialOptions(dp grpc.DialOption) Option {
 	return func(gp *GrpcPool) {
-		gp.dialOptions = dp
+		gp.dialOptions = append(gp.dialOptions, dp)
 	}
 }
 
@@ -149,17 +168,19 @@ func Dial(target string, opts ...Option) (*GrpcPool, error) {
 		opt(gp)
 	}
 	//conn size todo: similarly keepalive programs
-	gp.conns = make([]*grpc.ClientConn, gp.poolCnt.MinIdleConns)
+	gp.conns = make([]*Conn, gp.poolCnt.MinIdleConns)
 	//conn timeout
 	for i := 0; i < gp.poolCnt.MinIdleConns; i++ {
-		dialOpts := gp.combine(defaultDialOpts, gp.dialOptions)
+		dialOpts := combine(defaultDialOpts, gp.dialOptions)
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(gp.deadline))
 		defer cancel()
 		conn, err := grpc.DialContext(ctx, target, dialOpts...)
 		if err != nil {
 			return gp, fmt.Errorf("grpc dial target %v error %v", target, err)
 		}
-		gp.conns[i] = conn
+		gp.conns[i] = &Conn{
+			conn,
+		}
 	}
 
 	return gp, nil
