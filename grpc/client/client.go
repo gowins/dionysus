@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -58,6 +57,7 @@ type GrpcPool struct {
 	target      string
 	conns       []*Conn
 	poolSize    uint32
+	next        uint32
 	poolCnt     *PoolController
 	dialOptions []grpc.DialOption
 	deadline    time.Duration
@@ -125,36 +125,25 @@ func (gp *GrpcPool) getConnsNum() uint32 {
 	return uint32(len(gp.conns))
 }
 func (gp *GrpcPool) pickLeastConn() (*Conn, error) {
-	gp.rw.Lock()
-	randIndex1 := rand.Uint32()
-	randIndex2 := rand.Uint32()
-	randIndex3 := rand.Uint32()
-	gp.rw.Unlock()
-	minIndex := randIndex1
-	minInflight := gp.conns[minIndex%gp.poolSize].inflight
+	gp.rw.RLock()
+	defer gp.rw.RUnlock()
 
-	if minInflight > gp.conns[randIndex2%gp.poolSize].inflight {
-		minInflight = gp.conns[randIndex2%gp.poolSize].inflight
-		minIndex = randIndex2
-	}
+	nextIndex := atomic.AddUint32(&gp.next, 1)
 
-	if minInflight > gp.conns[randIndex3%gp.poolSize].inflight {
-		minInflight = gp.conns[randIndex3%gp.poolSize].inflight
-		minIndex = randIndex3
-	}
-	grpcConn := gp.conns[minIndex%gp.poolSize]
+	conn := gp.conns[nextIndex%gp.poolSize]
 
 	// if conn is not ready, choose a next ready conn
-	if grpcConn.GetState() != connectivity.Ready && grpcConn.GetState() != connectivity.Idle {
-		var i uint32 = 0
-		for ; i < gp.poolSize; i++ {
-			if gp.conns[(minIndex+i)%gp.poolSize].GetState() == connectivity.Ready ||
-				gp.conns[(minIndex+i)%gp.poolSize].GetState() == connectivity.Idle {
-				return gp.conns[(minIndex+i)%gp.poolSize], nil
+	if conn.GetState() != connectivity.Ready && conn.GetState() != connectivity.Idle {
+		var i uint32
+		for i = 0; i < gp.poolSize; i++ {
+			idx := (i + nextIndex) % gp.poolSize
+			if gp.conns[idx].GetState() == connectivity.Ready ||
+				gp.conns[idx].GetState() == connectivity.Idle {
+				return gp.conns[idx], nil
 			}
 		}
 	}
-	return grpcConn, nil
+	return conn, nil
 }
 func (gp *GrpcPool) GetTotalUse() uint32 {
 	var (
