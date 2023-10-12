@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gowins/dionysus"
 	"github.com/gowins/dionysus/cmd"
@@ -21,9 +25,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"gorm.io/plugin/opentelemetry/tracing"
-	"io"
-	"net/http"
-	"time"
 )
 
 var httpClient httpclient.Client

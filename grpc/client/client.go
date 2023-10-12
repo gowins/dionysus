@@ -3,10 +3,13 @@ package client
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/gowins/dionysus/log"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -15,7 +18,7 @@ import (
 )
 
 const (
-	// KeepAliveTime is the duration of time after which if the client doesn't see
+	// KeepAliveTime is the duration of time after which is the client doesn't see
 	// any activity it pings the server to see if the transport is still alive.
 	keepAliveTime = 10 * time.Second
 
@@ -26,8 +29,11 @@ const (
 
 	defaultDialDeadline = 2 * time.Second
 
-	//default PoolSize
+	//default max PoolSize
 	defaultPoolCardinalSize = 10
+
+	//default PoolSize
+	defaultPoolInitSize = 3
 
 	defaultMinIdleConns = 2
 
@@ -49,28 +55,35 @@ var defaultDialOpts = []grpc.DialOption{
 
 // GrpcPool implemented ClientConnInterface
 type GrpcPool struct {
+	target      string
 	conns       []*Conn
-	next        uint32 // round-robin balancer
+	poolSize    uint32
 	poolCnt     *PoolController
 	dialOptions []grpc.DialOption
 	deadline    time.Duration
+	rw          sync.RWMutex
+	// Notifications need to be scalable
+	ntfChan chan struct{}
 }
 
-// Conn todo
+// Conn
+// todo inflight less than maxcurrentstreams
 type Conn struct {
 	*grpc.ClientConn
+	inflight int32
 }
+
 type PoolController struct {
 	// Maximum number of grpc connections.
 	// Default is 10 connections per every available CPU as reported by runtime.GOMAXPROCS.
-	PoolSize int
+	PoolSize uint32
 	// Maximum number of parallel stream use in ever grpc connections.
 	// Default is runtime.GOMAXPROCS. Do not change this value if it is not specifically required,
 	// but instead change PoolSize
-	MaxCurrentStream int
+	MaxCurrentStream uint32
 	// Minimum number of idle connections which is useful when establishing
 	// new connection is slow.
-	MinIdleConns int
+	MinIdleConns uint32
 	// Connection age at which client retires (closes) the connection.
 	// Default is to not close aged connections.
 	MaxConnAge time.Duration
@@ -81,37 +94,133 @@ type PoolController struct {
 
 // Invoke sends the RPC request on the wire and returns after response is
 func (gp *GrpcPool) Invoke(ctx context.Context, method string, args, reply interface{}, opts ...grpc.CallOption) error {
-	return gp.pickLeastConn().Invoke(ctx, method, args, reply, opts...)
+	grpcConn, err := gp.pickLeastConn()
+	if err != nil {
+		return err
+	}
+	atomic.AddInt32(&grpcConn.inflight, 1)
+	defer atomic.AddInt32(&grpcConn.inflight, -1)
+	return grpcConn.Invoke(ctx, method, args, reply, opts...)
 }
 
 // NewStream begins a streaming RPC.
 func (gp *GrpcPool) NewStream(ctx context.Context, desc *grpc.StreamDesc, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
-	return gp.pickLeastConn().NewStream(ctx, desc, method, opts...)
+	grpcConn, err := gp.pickLeastConn()
+	if err != nil {
+		return nil, err
+	}
+	atomic.AddInt32(&grpcConn.inflight, 1)
+	defer atomic.AddInt32(&grpcConn.inflight, -1)
+	return grpcConn.NewStream(ctx, desc, method, opts...)
+
 }
 
-// Close  Just back conn, GP no need close conn exclude scale according to PoolController
 func (gp *GrpcPool) Close() {
 
 }
 
-func (gp *GrpcPool) pickLeastConn() *Conn {
-	connsLen := uint32(len(gp.conns))
-	nextIndex := atomic.AddUint32(&gp.next, 1)
+func (gp *GrpcPool) getConnsNum() uint32 {
+	gp.rw.RLock()
+	defer gp.rw.RUnlock()
+	return uint32(len(gp.conns))
+}
+func (gp *GrpcPool) pickLeastConn() (*Conn, error) {
+	gp.rw.Lock()
+	randIndex1 := rand.Uint32()
+	randIndex2 := rand.Uint32()
+	randIndex3 := rand.Uint32()
+	gp.rw.Unlock()
+	minIndex := randIndex1
+	minInflight := gp.conns[minIndex%gp.poolSize].inflight
 
-	conn := gp.conns[nextIndex%connsLen]
+	if minInflight > gp.conns[randIndex2%gp.poolSize].inflight {
+		minInflight = gp.conns[randIndex2%gp.poolSize].inflight
+		minIndex = randIndex2
+	}
+
+	if minInflight > gp.conns[randIndex3%gp.poolSize].inflight {
+		minInflight = gp.conns[randIndex3%gp.poolSize].inflight
+		minIndex = randIndex3
+	}
+	grpcConn := gp.conns[minIndex%gp.poolSize]
 
 	// if conn is not ready, choose a next ready conn
-	if conn.GetState() != connectivity.Ready && conn.GetState() != connectivity.Idle {
-		var i uint32
-		for i = 0; i < connsLen; i++ {
-			idx := (i + nextIndex) % connsLen
-			if gp.conns[idx].GetState() == connectivity.Ready ||
-				gp.conns[idx].GetState() == connectivity.Idle {
-				return gp.conns[idx]
+	if grpcConn.GetState() != connectivity.Ready && grpcConn.GetState() != connectivity.Idle {
+		var i uint32 = 0
+		for ; i < gp.poolSize; i++ {
+			if gp.conns[(minIndex+i)%gp.poolSize].GetState() == connectivity.Ready ||
+				gp.conns[(minIndex+i)%gp.poolSize].GetState() == connectivity.Idle {
+				return gp.conns[(minIndex+i)%gp.poolSize], nil
 			}
 		}
 	}
-	return conn
+	return grpcConn, nil
+}
+func (gp *GrpcPool) GetTotalUse() uint32 {
+	var (
+		totalUse uint32
+		i        uint32
+	)
+	for ; i < gp.poolCnt.PoolSize; i++ {
+		totalUse = totalUse + uint32(gp.conns[i].inflight)
+	}
+	return totalUse
+}
+
+func (gp *GrpcPool) scaleConn(connNum uint32) (uint32, error) {
+	//todo reduce idle
+	if connNum >= gp.poolCnt.PoolSize {
+		return 0, fmt.Errorf("grpc dial target %s error: Setting PoolSize is %d, current conns aleady %d ",
+			gp.target, gp.poolCnt.PoolSize, connNum)
+	}
+	var i uint32 = 0
+	tc := make([]*Conn, 0, connNum-gp.poolSize)
+	for ; i < connNum-gp.poolSize; i++ {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(gp.deadline))
+		defer cancel()
+		conn, err := grpc.DialContext(ctx, gp.target, gp.dialOptions...)
+		if err != nil {
+			return 0, fmt.Errorf("grpc dial target %v error %v", gp.target, err)
+		}
+		tc = append(tc, &Conn{
+			ClientConn: conn,
+			inflight:   0,
+		})
+	}
+	gp.conns = combine(tc, gp.conns)
+	gp.poolSize = connNum
+	return gp.poolSize, nil
+}
+
+func (gp *GrpcPool) ScalePool() error {
+	log.Infof("grpc pool auto scaler start period %v", gp.poolCnt.IdleCheckFrequency)
+	tk := time.NewTicker(gp.poolCnt.IdleCheckFrequency)
+	r := func() error {
+		gp.rw.Lock()
+		totalUse := gp.GetTotalUse()
+		if maxStreams := gp.poolCnt.PoolSize * gp.poolCnt.MaxCurrentStream; totalUse > maxStreams {
+			deltaConn := (totalUse - maxStreams) / (gp.poolCnt.MaxCurrentStream / 2)
+			_, err := gp.scaleConn(deltaConn)
+			if err != nil {
+				return err
+			}
+		}
+		gp.rw.Unlock()
+		return nil
+	}
+	for {
+		select {
+		case <-gp.ntfChan:
+			tk.Reset(gp.poolCnt.IdleCheckFrequency)
+			if err := r(); err != nil {
+				return err
+			}
+		case <-tk.C:
+			if err := r(); err != nil {
+				return err
+			}
+		}
+	}
 }
 
 func combine[T any](o1 []T, o2 []T) []T {
@@ -131,9 +240,9 @@ func combine[T any](o1 []T, o2 []T) []T {
 
 type Option = func(*GrpcPool)
 
-func WithDialOptions(dp grpc.DialOption) Option {
+func WithDialOptions(dp ...grpc.DialOption) Option {
 	return func(gp *GrpcPool) {
-		gp.dialOptions = append(gp.dialOptions, dp)
+		gp.dialOptions = append(gp.dialOptions, dp...)
 	}
 }
 
@@ -155,32 +264,26 @@ func Dial(target string, opts ...Option) (*GrpcPool, error) {
 		return nil, errors.New("Invalid target")
 	}
 	gp := &GrpcPool{
+		target: target,
 		poolCnt: &PoolController{
-			PoolSize:           defaultPoolCardinalSize * runtime.GOMAXPROCS(0),
-			MaxCurrentStream:   runtime.GOMAXPROCS(0),
+			PoolSize:           uint32(defaultPoolCardinalSize * runtime.GOMAXPROCS(0)),
+			MaxCurrentStream:   uint32(runtime.GOMAXPROCS(0)),
 			MinIdleConns:       defaultMinIdleConns,
 			MaxConnAge:         defaultMaxConnAge * time.Minute,
 			IdleCheckFrequency: defaultIdleCheckFrequency,
 		},
 		deadline: defaultDialDeadline,
+		ntfChan:  make(chan struct{}),
 	}
 	for _, opt := range opts {
 		opt(gp)
 	}
 	//conn size todo: similarly keepalive programs
-	gp.conns = make([]*Conn, gp.poolCnt.MinIdleConns)
+	//gp.conns = make([]*Conn, gp.poolCnt.PoolSize)
 	//conn timeout
-	for i := 0; i < gp.poolCnt.MinIdleConns; i++ {
-		dialOpts := combine(defaultDialOpts, gp.dialOptions)
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(gp.deadline))
-		defer cancel()
-		conn, err := grpc.DialContext(ctx, target, dialOpts...)
-		if err != nil {
-			return gp, fmt.Errorf("grpc dial target %v error %v", target, err)
-		}
-		gp.conns[i] = &Conn{
-			conn,
-		}
+	gp.dialOptions = combine(defaultDialOpts, gp.dialOptions)
+	if _, err := gp.scaleConn(defaultPoolInitSize); err != nil {
+		return nil, fmt.Errorf("grpc dial target %v error %v", target, err)
 	}
 
 	return gp, nil
