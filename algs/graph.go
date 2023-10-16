@@ -36,7 +36,7 @@ func (g *Graph[T]) AddPoint(v T) {
 }
 
 // AddEdge add Edge with two points v, w
-// todo nil is untyped, so v,w will not be nil.  unnecessary check v==nil or w==nil
+// nil is untyped, so v,w will not be nil.  unnecessary check v==nil or w==nil
 
 func (g *Graph[T]) AddEdge(v T, w T) {
 	//todo optimize lock
