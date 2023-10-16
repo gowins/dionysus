@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gowins/dionysus/grpc"
 	"github.com/gowins/dionysus/grpc/server"
 	"github.com/gowins/dionysus/grpc/serverinterceptors"
 	xlog "github.com/gowins/dionysus/log"
