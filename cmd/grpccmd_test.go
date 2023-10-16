@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gowins/dionysus/grpc"
 	"github.com/gowins/dionysus/grpc/server"
 	"github.com/gowins/dionysus/grpc/serverinterceptors"
 	xlog "github.com/gowins/dionysus/log"
@@ -16,9 +15,7 @@ import (
 //go:norace
 func TestGrpcCmd(t *testing.T) {
 	xlog.Setup(xlog.SetProjectName("test"), xlog.WithWriter(io.Discard))
-	c := NewGrpcCmd(WithCfg(server.DefaultCfg),
-		WithGrpcServerOpt(&grpc.EmptyServerOption{}),
-	)
+	c := NewGrpcCmd(WithCfg(server.DefaultCfg))
 	c.EnableDebug()
 	c.opts.debug = true
 	// recover interceptor
