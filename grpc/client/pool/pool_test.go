@@ -3,13 +3,14 @@ package pool
 import (
 	"context"
 	"fmt"
+	"net"
+	"testing"
+	"time"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
-	"net"
-	"testing"
-	"time"
 
 	"github.com/gowins/dionysus/grpc/client/pool/testpb"
 )

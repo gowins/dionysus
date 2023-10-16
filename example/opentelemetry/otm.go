@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gowins/dionysus"
 	"github.com/gowins/dionysus/cmd"
@@ -16,14 +20,13 @@ import (
 	"github.com/gowins/dionysus/orm"
 	"github.com/gowins/dionysus/step"
 	kafkago "github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
 	"gorm.io/plugin/opentelemetry/tracing"
-	"io"
-	"net/http"
-	"time"
 )
 
 var httpClient httpclient.Client
@@ -132,7 +135,8 @@ func otmApiTest(c *gin.Context) ginx.Render {
 // 对于grpc到client来说，创建连接时，必须使用NewConnWithTracer
 func grpcCLient() {
 	// 必须使用NewConnWithTracer
-	grpcConn, _ := client.NewConnWithTracer("grpcServiceName")
+	grpcConn, _ := client.Dial("grpcServiceName", client.WithDialOptions(grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor())))
 	c := hw.NewGreeterClient(grpcConn)
 	opts := []oteltrace.SpanStartOption{
 		oteltrace.WithAttributes(attribute.String("GrpcCli", "name")),
