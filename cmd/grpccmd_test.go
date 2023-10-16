@@ -16,9 +16,7 @@ import (
 //go:norace
 func TestGrpcCmd(t *testing.T) {
 	xlog.Setup(xlog.SetProjectName("test"), xlog.WithWriter(io.Discard))
-	c := NewGrpcCmd(WithCfg(server.DefaultCfg),
-		WithGrpcServerOpt(&grpc.EmptyServerOption{}),
-	)
+	c := NewGrpcCmd(WithCfg(server.DefaultCfg))
 	c.EnableDebug()
 	c.opts.debug = true
 	// recover interceptor
