@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/keepalive"
 )
 
 type Option func(*GrpcPool)
@@ -18,12 +20,6 @@ func WithPoolSize(poolSize int) Option {
 func WithDialOptions(dialOptions []grpc.DialOption) Option {
 	return func(pool *GrpcPool) {
 		pool.dialOptions = dialOptions
-	}
-}
-
-func WithScaleOption(scaleOption *ScaleOption) Option {
-	return func(pool *GrpcPool) {
-		pool.scaleOption = scaleOption
 	}
 }
 
@@ -59,21 +55,21 @@ var DefaultScaleOption = &ScaleOption{
 	DesireMaxStream: 80,
 }
 
-var DefaultDialTimeout = 3 * time.Second
+var DefaultDialTimeout = 1 * time.Second
 
-//var DefaultDialOpts = []grpc.DialOption{
-//	grpc.WithTransportCredentials(insecure.NewCredentials()),
-//	grpc.WithBlock(),
-//	grpc.WithInitialWindowSize(InitialWindowSize),
-//	grpc.WithInitialConnWindowSize(InitialConnWindowSize),
-//	grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(MaxSendMsgSize)),
-//	grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxRecvMsgSize)),
-//	grpc.WithKeepaliveParams(keepalive.ClientParameters{
-//		Time:                KeepAliveTime,
-//		Timeout:             KeepAliveTimeout,
-//		PermitWithoutStream: true,
-//	}),
-//}
+var DefaultDialOpts = []grpc.DialOption{
+	grpc.WithTransportCredentials(insecure.NewCredentials()),
+	grpc.WithBlock(),
+	grpc.WithInitialWindowSize(InitialWindowSize),
+	grpc.WithInitialConnWindowSize(InitialConnWindowSize),
+	grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(MaxSendMsgSize)),
+	grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxRecvMsgSize)),
+	grpc.WithKeepaliveParams(keepalive.ClientParameters{
+		Time:                KeepAliveTime,
+		Timeout:             KeepAliveTimeout,
+		PermitWithoutStream: true,
+	}),
+}
 
 var defaultPoolSize = 3
 
